@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MJM Mill Stock Take &amp; Audit System</title>
+<meta name="theme-color" content="#1d5a3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MJM Audit">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header class="topbar" id="topbar" hidden>
+  <div class="topbar-inner">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true">MJM</span>
+      <span class="brand-text"><strong>Mill Stock Take &amp; Audit</strong><small>MJM (Palm Oil Mill) Sdn Bhd</small></span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" class="nav">
+      <a href="#/" data-nav="dashboard">Dashboard</a>
+      <a href="#/new" data-nav="new">New Stock Take</a>
+      <a href="#/history" data-nav="history">Audit History</a>
+      <a href="#/settings" data-nav="settings">Calibration Tables &amp; Settings</a>
+      <a href="#/users" data-nav="users" data-role="admin">Users</a>
+      <a href="#/backup" data-nav="backup" data-role="admin">Backup</a>
+      <span class="nav-user" id="navUser"></span>
+    </nav>
+  </div>
+</header>
+<main id="app" class="container"><p class="muted">Loading…</p></main>
+<div id="toast" class="toast" role="status" hidden></div>
+<div id="modal" class="modal" hidden><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div></div>
+<script src="./js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfkit@0.15.2/js/pdfkit.standalone.js" crossorigin="anonymous"></script>
+<script src="./js/mjm-lib.js"></script>
+<script src="./js/backend-supabase.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
