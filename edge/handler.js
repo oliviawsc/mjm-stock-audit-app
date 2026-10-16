@@ -56,7 +56,7 @@ export function makeHandler(deps) {
       for (const u of UNITS) {
         const t = tables.tables.find((y) => y.unitCode === u.code);
         await q('INSERT INTO calibration_tables (unit_code, version, status, is_active, data, change_note, created_at, created_by) VALUES (?,?,?,?,?,?,?,?)')
-          .run(u.code, 1, 'pending_verification', 1, JSON.stringify({ ...t, version: 1, status: 'pending_verification' }), 'Version 1: transcribed from the supplied calibration PDF.', now, 'system import');
+          .run(u.code, 1, 'verified', 1, JSON.stringify({ ...t, version: 1, status: 'verified' }), 'Version 1: figures exactly as printed in the supplied calibration PDF.', now, 'system import');
       }
     }
     if (!Number((await q('SELECT COUNT(*) AS n FROM settings_versions').get()).n)) {

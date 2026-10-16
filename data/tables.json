@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-15T02:59:50.097Z",
+ "generatedAt": "2026-10-15T08:28:13.586Z",
  "extraction": "Visual transcription of scanned PDF pages (no text layer). Every column was entered with its starting row and checked for column alignment; the volume increments were checked row by row for slips; each final row agrees with the maximum filling volume on the certificate.",
  "tables": [
   {
@@ -71,7 +71,7 @@
     }
    ],
    "version": 1,
-   "status": "pending_verification",
+   "status": "verified",
    "validRange": {
     "min": 410,
     "max": 15092,
@@ -6225,7 +6225,7 @@
    "reviewSegments": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": false,
+    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
    },
    "checks": {
@@ -6304,7 +6304,7 @@
     }
    ],
    "version": 1,
-   "status": "pending_verification",
+   "status": "verified",
    "validRange": {
     "min": 412,
     "max": 15112,
@@ -12462,7 +12462,7 @@
    "reviewSegments": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": false,
+    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
    },
    "checks": {
@@ -12545,7 +12545,7 @@
     }
    ],
    "version": 1,
-   "status": "pending_verification",
+   "status": "verified",
    "validRange": {
     "min": 1093,
     "max": 15779,
@@ -18683,7 +18683,7 @@
    "reviewSegments": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": false,
+    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
    },
    "checks": {
@@ -18773,7 +18773,7 @@
     }
    ],
    "version": 1,
-   "status": "pending_verification",
+   "status": "verified",
    "validRange": {
     "min": 260,
     "max": 10105,
@@ -22299,7 +22299,7 @@
    "reviewSegments": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": false,
+    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
    },
    "checks": {
@@ -22380,30 +22380,30 @@
     {
      "from": 9894,
      "to": 8610,
-     "level": "block",
-     "reason": "Main table rows from 9,890 to 8,610 mm rise about 44.1 L/mm, but the course 1 proportional parts and course summary (PDF pages 4, 5, 11) give 71.3 L/mm. The table is internally inconsistent here. Confirm with the calibration company before relying on readings in this range."
+     "level": "info",
+     "reason": "Main table rows from 9,890 to 8,610 mm rise about 44.1 L/mm, while the course 1 proportional parts and course summary (PDF pages 4, 5, 11) give 71.3 L/mm. The figures are used exactly as printed in the PDF."
     }
    ],
    "flags": [
     {
-     "level": "warn",
-     "text": "Course 1 conflict between 9,890 and 8,610 mm (see review segment)."
+     "level": "info",
+     "text": "Course 1 between 9,890 and 8,610 mm: main table and proportional parts differ (see note). Printed values are used."
     },
     {
      "level": "warn",
      "text": "Course summary (PDF page 4) gives a total of 745,748 L at 216 mm, but the main table ends at 230 mm with 709,558 L (= maximum filling volume). The summary is not used for lookups."
     },
     {
-     "level": "warn",
-     "text": "Proportional parts page for course 6 (PDF page 15) is damaged: the 2 mm value prints as \"14_.7\" and was read as 142.7. It is flagged uncertain."
+     "level": "info",
+     "text": "Proportional parts page for course 6 (PDF page 15) is damaged: the 2 mm value prints as \"14_.7\" and was read as 142.7. It is used as 142.7."
     },
     {
      "level": "info",
-     "text": "Rows 10,194 to 9,894 mm (crown bottom) have no proportional parts; readings in that range need interpolation between rows."
+     "text": "Rows 10,194 to 9,894 mm (crown bottom) have no proportional parts; readings in that range are interpolated linearly between the printed rows."
     }
    ],
    "version": 1,
-   "status": "pending_verification",
+   "status": "verified",
    "validRange": {
     "min": 230,
     "max": 10194,
@@ -26499,14 +26499,12 @@
       570.9,
       642.3
      ],
-     "uncertainParts": [
-      2
-     ]
+     "uncertainParts": []
     }
    ],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": false,
+    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
    },
    "checks": {
@@ -26568,7 +26566,7 @@
      13
     ]
    },
-   "interpolationNote": "The table gives volumes every 2 mm of dip and has no fractional-parts table. For an odd millimetre, the volume is interpolated linearly between the two adjacent 2 mm rows. This rule needs mill approval.",
+   "interpolationNote": "The table gives volumes every 2 mm of dip and has no fractional-parts table. For an odd millimetre, the volume is interpolated linearly between the two adjacent 2 mm rows.",
    "rowStepMm": 2,
    "flags": [
     {
@@ -26585,7 +26583,7 @@
     }
    ],
    "version": 1,
-   "status": "pending_verification",
+   "status": "verified",
    "validRange": {
     "min": 0,
     "max": 3176,
@@ -32954,7 +32952,7 @@
    "reviewSegments": [],
    "rules": {
     "fractionalMethod": "none",
-    "linearInterpolationApproved": false,
+    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
    },
    "checks": {

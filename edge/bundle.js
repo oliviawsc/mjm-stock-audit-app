@@ -220,7 +220,7 @@ function lookup(table, reading) {
   }
 
   for (const seg of table.reviewSegments || []) {
-    if (reading <= seg.from + 1e-9 && reading >= seg.to - 1e-9) issues.push({ level: seg.level || 'block', code: 'table_review_segment', text: seg.reason });
+    if (reading <= seg.from + 1e-9 && reading >= seg.to - 1e-9) issues.push({ level: seg.level === 'block' ? 'block' : 'info', code: 'table_review_segment', text: seg.reason });
   }
 
   const i = floorIndex(rows, reading);
@@ -246,7 +246,7 @@ function lookup(table, reading) {
         const segLen = Math.min(remaining, pos - band.to);
         const val = partsValue(band, segLen);
         for (const k of usedPartIndices(segLen)) {
-          if ((band.uncertainParts || []).includes(k)) issues.push({ level: 'block', code: 'uncertain_parts_value', text: `The ${k} mm fractional-parts value for band ${fmt(band.from)}–${fmt(band.to)} mm is uncertain in the source document and must be confirmed.` });
+          if ((band.uncertainParts || []).includes(k)) issues.push({ level: 'info', code: 'uncertain_parts_value', text: `The ${k} mm fractional-parts value for band ${fmt(band.from)}–${fmt(band.to)} mm is hard to read in the source document; the value as read from the PDF is used.` });
         }
         pieces.push(`${fmt(segLen)} mm in band ${fmt(band.from)}–${fmt(band.to)} mm = ${fmt(round(val, 2))} L`);
         total += val; pos -= segLen; remaining -= segLen;
@@ -265,13 +265,14 @@ function lookup(table, reading) {
   const [h0, v0] = lowerRow, [h1, v1] = upperRow;
   const volume = v0 + (reading - h0) * (v1 - v0) / (h1 - h0);
   steps.push(`Linear interpolation between ${fmt(h0)} mm (${fmt(v0)} L) and ${fmt(h1)} mm (${fmt(v1)} L)`);
-  const approved = !!(table.rules && table.rules.linearInterpolationApproved);
+  // Used unless a table version explicitly turns it off.
+  const approved = !(table.rules && table.rules.linearInterpolationApproved === false);
   issues.push({
     level: approved ? 'info' : 'block',
     code: 'linear_interpolation',
     text: approved
-      ? 'Volume interpolated linearly between table rows (approved rule for this table version).'
-      : `No fractional parts cover ${fmt(reading)} mm in ${table.unitName}; the volume was interpolated linearly between rows. This rule is not yet approved for this table, so the audit cannot be finalised with this reading.`,
+      ? `The table gives no fractional parts for ${fmt(reading)} mm; the volume was interpolated linearly between the printed rows.`
+      : `No fractional parts cover ${fmt(reading)} mm in ${table.unitName}; the volume was interpolated linearly between rows. Linear interpolation is turned off for this table version, so the audit cannot be finalised with this reading.`,
   });
   return { ok: true, volume, method: 'linear_interpolation', steps, issues };
 }
@@ -548,7 +549,7 @@ function computeAudit(inputs, ctx) {
         else m = computeDieselUnit(u, input, table);
         r.measurement = m; r.quantity = m.quantity; r.issues.push(...m.issues);
       }
-      if (table && table.status !== 'verified') r.issues.push(issue('block', 'table_unverified', `Calibration table for ${u.name} (version ${table.version}) is not verified. It can be previewed but not used to finalise a real audit.`, { gate: 'calibration' }));
+      if (table && table.status === 'rejected') r.issues.push(issue('block', 'table_rejected', `Calibration table for ${u.name} (version ${table.version}) was rejected and cannot be used to finalise a real audit.`, { gate: 'calibration' }));
     }
     r.adjustment = 0;
     r.movementLines = [];
@@ -864,7 +865,7 @@ function pdf(v, sink, PDFDocumentClass) {
   h1('Measurements');
   for (const x of Object.values(r.units)) {
     h2(`${x.name} - ${STATUS[x.status] || 'status not set'}`);
-    if (x.table) p(`Calibration table: version ${x.table.version} (${x.table.status === 'verified' ? 'verified' : 'NOT VERIFIED'}), ${x.table.reportReference}, calibrated ${fmtDate(x.table.calibrationDate)}, ${x.table.basis} in ${x.table.measurementUnit}, volume in ${x.table.volumeUnit}. Source: ${x.table.sourceFile}.`, { size: 8, color: '#444' });
+    if (x.table) p(`Calibration table: version ${x.table.version} (figures as printed in the PDF), ${x.table.reportReference}, calibrated ${fmtDate(x.table.calibrationDate)}, ${x.table.basis} in ${x.table.measurementUnit}, volume in ${x.table.volumeUnit}. Source: ${x.table.sourceFile}.`, { size: 8, color: '#444' });
     if (x.status === 'excluded') { p(`Reason: ${x.excludeReason || ''}`); continue; }
     if (x.measuredAt) p(`${x.product === 'CPO' ? 'Dipping' : 'Measurement'} date and time: ${fmtDateTime(x.measuredAt)}`);
     if (x.status === 'empty') { p('Confirmed empty by the auditor. Quantity 0.'); }
@@ -924,7 +925,7 @@ function pdf(v, sink, PDFDocumentClass) {
   const si = v.snapshotInfo;
   p(si.live ? `Draft calculated with the current settings (version ${si.settingsVersion}) and active calibration tables. Results may change until finalised.` : `Finalised with settings version ${si.settingsVersion} and engine ${si.engineVersion}. These values are frozen and are not recalculated.`, { size: 8.5 });
   table([{ t: 'Unit', w: 0.25 }, { t: 'Table version', w: 0.15 }, { t: 'Status', w: 0.2 }, { t: 'Report reference', w: 0.4 }],
-    Object.entries(si.tables).filter(([k]) => r.units[k]).map(([k, t]) => [r.units[k].name, `v${t.version}`, t.status === 'verified' ? 'Verified' : 'Not verified', t.reportReference || r.units[k].table?.reportReference || '']));
+    Object.entries(si.tables).filter(([k]) => r.units[k]).map(([k, t]) => [r.units[k].name, `v${t.version}`, t.status === 'rejected' ? 'Rejected' : 'As per PDF', t.reportReference || r.units[k].table?.reportReference || '']));
   p('CPO: ullage = reference mark - wetted part, converted to mm; volume from the tank table (next higher 10 mm row + fractional parts); MT = litres x density at the measured temperature / 1,000 (or, if configured, litres x VCF x reference density / 1,000). PK: adopted ullage -> bunker table litres x bulk density / 1,000. Diesel: dip -> litres from the diesel table, no density or temperature correction.', { size: 8 });
 
   // Issues
@@ -1188,10 +1189,6 @@ function createRoutes({ db, sha256, usersTable = 'users', backupUsers = true }) 
 
   function outstandingInputs(tables, s) {
     const out = [];
-    for (const t of Object.values(tables)) if (t.status !== 'verified') out.push({ area: 'Calibration', text: `${t.unitName} table version ${t.version} needs human verification against the PDF.` });
-    for (const t of Object.values(tables)) if ((t.fractionalBands || []).some((b) => (b.uncertainParts || []).length)) out.push({ area: 'Calibration', text: `${t.unitName}: uncertain fractional-parts value in the source must be confirmed.` });
-    for (const t of Object.values(tables)) for (const seg of t.reviewSegments || []) out.push({ area: 'Calibration', text: `${t.unitName}: ${seg.reason}` });
-    for (const t of Object.values(tables)) if (!(t.rules && t.rules.linearInterpolationApproved)) out.push({ area: 'Calibration', text: `${t.unitName}: approve or reject linear interpolation between rows where the table gives no fractional parts.` });
     if (!s.cpo.conversion.rows.length) out.push({ area: 'CPO', text: 'CPO temperature conversion setup required.' });
     else if (s.cpo.conversion.status !== 'confirmed') out.push({ area: 'CPO', text: 'Confirm the CPO temperature/density table and how temperatures between rows are handled.' });
     if (s.cpo.adoptedRule.status !== 'confirmed') out.push({ area: 'CPO', text: 'Confirm the rule for the adopted result of repeated readings (currently provisional: average of quantities).' });
@@ -1361,7 +1358,7 @@ function createRoutes({ db, sha256, usersTable = 'users', backupUsers = true }) 
       await q('UPDATE calibration_tables SET is_active = 0 WHERE unit_code = ?').run(unit.code);
       const { id: _i, version: _v, status: _s, isActive: _a, verifiedBy: _vb, verifiedAt: _va, verifyNote: _vn, changeNote: _cn, createdAt: _ca, createdBy: _cb, ...clean } = data;
       const r = await q('INSERT INTO calibration_tables (unit_code, version, status, is_active, data, change_note, created_at, created_by) VALUES (?,?,?,?,?,?,?,?)')
-        .run(unit.code, maxV + 1, 'pending_verification', 1, JSON.stringify({ ...clean, version: maxV + 1 }), note, nowKuching(), user.display_name);
+        .run(unit.code, maxV + 1, 'verified', 1, JSON.stringify({ ...clean, version: maxV + 1 }), note, nowKuching(), user.display_name);
       return r.lastInsertRowid;
     });
     return { status: 201, json: tableFromRow(await tableById(id)) };

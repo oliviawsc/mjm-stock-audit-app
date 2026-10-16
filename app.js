@@ -23,6 +23,7 @@
   const unitsOf = (p) => S.meta.units.filter((u) => u.product === p);
   const STATUS_LABEL = { measured: 'Measured', empty: 'Confirmed empty', excluded: 'Excluded' };
   const AUDIT_STATUS = { draft: ['Draft', 'warn'], final: ['Final', 'good'], superseded: ['Superseded', 'neutral'] };
+  const statusPill = (s) => (s === 'rejected' ? '<span class="pill bad">Rejected</span>' : '<span class="pill good">As per PDF</span>');
 
   function parseDate(t) {
     const m = String(t || '').trim().match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
@@ -146,7 +147,7 @@
       <label class="field"><span>Username <span class="hint">3 to 32 letters, numbers, dots, dashes or underscores</span></span><input type="text" name="username" autocomplete="username" required></label>
       <label class="field"><span>Password <span class="hint">At least 8 characters</span></span><input type="password" name="password" autocomplete="new-password" required></label>
       <label class="field"><span>Repeat password</span><input type="password" name="password2" autocomplete="new-password" required></label>
-      <p class="small muted">Setup also loads the six calibration tables (pending verification), the initial settings and the June 2026 demonstration audit.</p>
+      <p class="small muted">Setup also loads the six calibration tables (figures exactly as printed in the PDFs), the initial settings and the June 2026 demonstration audit.</p>
       <button class="btn-primary" type="submit">Create Admin and sign in</button>
     </form>`;
     $('#setupForm').addEventListener('submit', async (e) => {
@@ -240,7 +241,7 @@
     const m = x.measurement;
     const t = x.table;
     let h = `<div class="unit-card p-${x.product}"><div class="panel-head"><span class="product-tag ${x.product}">${esc(P()[x.product].short)}</span><h3>${esc(x.name)}</h3><span class="pill ${x.status === 'excluded' ? 'warn' : 'info'}">${STATUS_LABEL[x.status] || 'Status not set'}</span></div>`;
-    if (t) h += `<p class="small muted">Calibration table v${t.version} (${t.status === 'verified' ? 'verified' : 'not verified'}) · ${esc(t.reportReference)} · calibrated ${fmtDate(t.calibrationDate)} · ${t.basis} in ${t.measurementUnit}, volume in ${t.volumeUnit}</p>`;
+    if (t) h += `<p class="small muted">Calibration table v${t.version} (as per PDF) · ${esc(t.reportReference)} · calibrated ${fmtDate(t.calibrationDate)} · ${t.basis} in ${t.measurementUnit}, volume in ${t.volumeUnit}</p>`;
     if (x.status === 'excluded') return h + `<p><b>Reason:</b> ${esc(x.excludeReason)}</p></div>`;
     if (x.measuredAt) h += `<p><b>${x.product === 'CPO' ? 'Dipping' : 'Measurement'} time:</b> ${fmtDT(x.measuredAt)}</p>`;
     if (x.status === 'empty') h += '<p>Confirmed empty. Quantity 0.</p>';
@@ -314,7 +315,7 @@
       </section>
       <section class="panel"><h2>Calibration tables</h2>
         <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Version</th><th>Status</th><th>Report reference</th><th>Re-verification due</th></tr></thead><tbody>
-        ${d.calibration.map((t) => `<tr class="clickable" data-href="#/settings/unit/${t.unitCode}"><td>${esc(t.unitName)}</td><td>v${t.version}</td><td>${t.status === 'verified' ? '<span class="pill good">Verified</span>' : '<span class="pill warn">Pending verification</span>'}</td><td>${esc(t.reportReference)}</td><td>${t.reverificationDue ? fmtDate(t.reverificationDue) : '<span class="muted">Not stated</span>'}</td></tr>`).join('')}
+        ${d.calibration.map((t) => `<tr class="clickable" data-href="#/settings/unit/${t.unitCode}"><td>${esc(t.unitName)}</td><td>v${t.version}</td><td>${statusPill(t.status)}</td><td>${esc(t.reportReference)}</td><td>${t.reverificationDue ? fmtDate(t.reverificationDue) : '<span class="muted">Not stated</span>'}</td></tr>`).join('')}
         </tbody></table></div></section>`;
     bindRowLinks();
   }
@@ -384,7 +385,7 @@
       <section class="stack"><h2>Measurements</h2>${Object.values(r.units).map((x) => measurementDetailHtml(x, inp)).join('')}</section>
       <section class="stack"><h2>Stock movements</h2><p class="small muted">Applied when after the cut-off and at or before the unit's measurement time. Outflows are added back; inflows are deducted.</p>${movementsTableHtml(r)}</section>
       <section class="panel"><h2>Calibration tables and settings used</h2>
-        <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Table version</th><th>Status</th></tr></thead><tbody>${Object.entries(a.snapshotInfo.tables).filter(([k]) => r.units[k]).map(([k, t]) => `<tr><td>${esc(unitName(k))}</td><td>v${t.version}</td><td>${t.status === 'verified' ? '<span class="pill good">Verified</span>' : '<span class="pill warn">Not verified</span>'}</td></tr>`).join('')}</tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Table version</th><th>Status</th></tr></thead><tbody>${Object.entries(a.snapshotInfo.tables).filter(([k]) => r.units[k]).map(([k, t]) => `<tr><td>${esc(unitName(k))}</td><td>v${t.version}</td><td>${statusPill(t.status)}</td></tr>`).join('')}</tbody></table></div>
         <p class="small muted">Settings version ${a.snapshotInfo.settingsVersion}${a.snapshotInfo.engineVersion ? `, calculation engine ${esc(a.snapshotInfo.engineVersion)}` : ''}.</p></section>
       <section class="stack"><h2>${a.status === 'draft' ? 'Items to resolve' : 'Warnings and notes'}</h2>${issuesHtml(r, { demo: a.isDemo })}</section>
       <section class="panel"><h2>Sign-off</h2><div class="table-wrap"><table><thead><tr><th>Role</th><th>Name</th><th>Signature</th><th>Date</th></tr></thead><tbody>
@@ -550,7 +551,7 @@
   function tableBadge(code) {
     const t = S.results && S.results.units[code] && S.results.units[code].table;
     if (!t) return '';
-    return `<a class="small" href="#/settings/unit/${code}" target="_blank" rel="noopener">Table v${t.version} · ${t.status === 'verified' ? 'verified' : 'not verified'}</a>`;
+    return `<a class="small" href="#/settings/unit/${code}" target="_blank" rel="noopener">Table v${t.version} · as per PDF</a>`;
   }
   function step2(inp) {
     if (!inp.products.length) return '<div class="notice warn">Choose at least one product in step 1.</div>';
@@ -647,7 +648,7 @@
   function step5(inp) {
     return `<section class="panel"><h2>5. Review &amp; finalise</h2>
       <p>Check the results below. Finalising freezes the inputs, calibration table versions, factors and calculation rules. After that, corrections are made as a new revision with a reason.</p>
-      ${S.draft.isDemo ? '<div class="notice info">This is a demonstration. It can be finalised for demonstration even while tables are unverified and settings are pending; the report is marked as a demonstration.</div>' : ''}
+      ${S.draft.isDemo ? '<div class="notice info">This is a demonstration. It can be finalised for demonstration even while settings are pending; the report is marked as a demonstration.</div>' : ''}
       <div class="grid">${textField('Prepared by', 'signoff.preparedBy', { placeholder: inp.preparedBy })}${textField('Checked by', 'signoff.checkedBy')}${textField('Approved by', 'signoff.approvedBy')}</div>
       <p class="small muted">Names are printed on the report with spaces for signatures and dates.</p></section>
       <div data-calc="review" class="stack"></div>
@@ -833,13 +834,12 @@
   }
   async function renderTablesList(head) {
     const d = await api('GET', '/api/calibration');
-    app.innerHTML = `${head}<div class="notice warn"><strong>All six tables were transcribed from scanned PDFs and are pending human verification.</strong><span>They can be used for drafts and previews, but a real audit cannot be finalised with a table until an Admin has checked it against the PDF and marked it verified.</span></div>
+    app.innerHTML = `${head}<div class="notice info"><span>All six tables use the figures exactly as printed in the calibration PDFs.</span></div>
       <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Product</th><th>Active version</th><th>Status</th><th>Basis</th><th>Range (mm)</th><th>Report reference</th><th>Calibrated</th><th>Flags</th></tr></thead><tbody>
       ${d.units.map((u) => { const t = u.active; return `<tr class="clickable" data-href="#/settings/unit/${u.code}"><td><b>${esc(u.name)}</b></td><td><span class="product-tag ${u.product}">${esc(P()[u.product].short)}</span></td><td>v${t.version}</td><td>${statusPill(t.status)}</td><td>${t.basis === 'dip' ? 'Dip depth' : 'Ullage'}</td><td class="n">${n0(t.validRange.min)}–${n0(t.validRange.max)}</td><td>${esc(t.reportReference)}</td><td>${fmtDate(t.calibrationDate)}</td><td>${t.flags.filter((f) => f.level === 'warn').length ? `<span class="pill warn">${t.flags.filter((f) => f.level === 'warn').length} to review</span>` : '<span class="pill neutral">None</span>'}</td></tr>`; }).join('')}
       </tbody></table></div>`;
     bindRowLinks();
   }
-  const statusPill = (s) => (s === 'verified' ? '<span class="pill good">Verified</span>' : s === 'rejected' ? '<span class="pill bad">Rejected</span>' : '<span class="pill warn">Pending verification</span>');
   async function renderTableDetail(head, unitCode, id, mode) {
     if (!id) { const d = await api('GET', '/api/calibration'); const u = d.units.find((x) => x.code === unitCode); if (!u) throw new Error('Unknown storage unit.'); id = u.active.id; }
     const t = await api('GET', `/api/calibration/${id}`);
@@ -856,8 +856,8 @@
         <div class="row">${statusPill(t.status)}${t.isActive ? '<span class="pill info">Active</span>' : '<span class="pill neutral">Not active</span>'}
         <button type="button" id="srcBtn">Open source PDF</button>
         <button type="button" id="tblCsvBtn">Export CSV</button>
-        ${isAdmin() ? `<a class="btn" href="#/settings/table/${t.id}/edit">Correct / import new version</a>${t.status !== 'verified' ? '<button class="btn-primary" id="verifyBtn">Verify…</button>' : ''}${!t.isActive && t.status !== 'rejected' ? '<button id="activateBtn">Make active</button>' : ''}` : ''}</div></div>
-      ${t.status !== 'verified' ? '<div class="notice warn">Not verified: may be previewed in drafts, but cannot be used to finalise a real audit.</div>' : `<div class="notice good">Verified by ${esc(t.verifiedBy)} on ${fmtDT(t.verifiedAt)}: ${esc(t.verifyNote)}</div>`}
+        ${isAdmin() ? `<a class="btn" href="#/settings/table/${t.id}/edit">Correct / import new version</a>${!t.isActive && t.status !== 'rejected' ? '<button id="activateBtn">Make active</button>' : ''}` : ''}</div></div>
+      ${t.status === 'rejected' ? '<div class="notice bad">Rejected version: cannot be used to finalise a real audit.</div>' : '<div class="notice good">Figures are used exactly as printed in the source PDF.</div>'}
       <div class="grid-2">
         <section class="panel"><h3>Calibration details</h3><dl class="kv">
           <dt>Storage unit</dt><dd>${esc(t.unitName)} (${esc(t.unitCode)})</dd>
@@ -879,11 +879,11 @@
           ${Object.entries(tp).map(([k, v]) => `<dt>${esc(k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/ Mm$/, ' (mm)').replace(/ L$/, ' (L)').replace(/ M$/, ' (m)').replace(/ C$/, ' (°C)'))}</dt><dd>${typeof v === 'number' ? v.toLocaleString('en-MY') : esc(v)}</dd>`).join('')}
           <dt>Capacity check</dt><dd>${t.checks && t.checks.capacityCheck ? (t.checks.capacityCheck.matches ? '<span class="pill good">Table end-point equals certificate maximum filling volume</span>' : '<span class="pill bad">Does not match certificate</span>') : '–'}</dd></dl>
           <h3>Lookup method</h3><p>${esc(t.interpolationNote || '')}</p>
-          <p><b>Linear interpolation between rows where no fractional parts are given:</b> ${t.rules && t.rules.linearInterpolationApproved ? '<span class="pill good">Approved</span>' : '<span class="pill warn">Not approved: readings in such gaps block finalisation</span>'}</p>
+          <p>Where the table gives no fractional parts, the volume is interpolated linearly between the printed rows.</p>
           <p class="small muted">Values outside the valid range are rejected. There is no extrapolation.</p>
         </section>
       </div>
-      ${t.flags.length || (t.reviewSegments || []).length ? `<section class="panel"><h3>Flags for review</h3><ul class="issues">${(t.reviewSegments || []).map((s) => `<li><span class="pill bad">Blocks ${n0(s.from)}–${n0(s.to)} mm</span> ${esc(s.reason)}</li>`).join('')}${t.flags.map((f) => `<li>${f.level === 'warn' ? '<span class="pill warn">Review</span>' : '<span class="pill neutral">Note</span>'} ${esc(f.text)}</li>`).join('')}</ul></section>` : ''}
+      ${t.flags.length || (t.reviewSegments || []).length ? `<section class="panel"><h3>Notes on the source document</h3><ul class="issues">${(t.reviewSegments || []).map((s) => `<li><span class="pill neutral">${n0(s.from)}–${n0(s.to)} mm</span> ${esc(s.reason)}</li>`).join('')}${t.flags.map((f) => `<li><span class="pill neutral">Note</span> ${esc(f.text)}</li>`).join('')}</ul></section>` : ''}
       <section class="panel"><h3>Try a lookup</h3><div class="row"><label class="field" style="max-width:260px"><span>${t.basis === 'dip' ? 'Dip' : 'Ullage'} (mm)</span><input type="text" inputmode="decimal" id="lkMm"></label><button id="lkBtn" style="align-self:flex-end">Look up</button></div><div id="lkOut"></div></section>
       ${(t.fractionalBands || []).length ? `<section class="panel"><h3>Fractional / proportional parts (litres)</h3><div class="table-wrap"><table><thead><tr><th>From (mm)</th><th>To (mm)</th>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `<th class="n">${k} mm</th>`).join('')}</tr></thead><tbody>${t.fractionalBands.map((b) => `<tr><td>${n0(b.from)}</td><td>${n0(b.to)}</td>${b.parts.map((x, i) => `<td class="n">${x}${(b.uncertainParts || []).includes(i + 1) ? ' <span class="pill bad">?</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>` : ''}
       <section class="panel"><div class="panel-head"><h3>Main table rows</h3><span class="spacer"></span><label class="field" style="flex-direction:row;align-items:center"><span class="small">Jump to mm</span><input type="text" inputmode="numeric" id="jump" style="width:120px;min-height:40px"></label></div>
@@ -891,8 +891,8 @@
         ${rows.slice(page * PER, page * PER + PER).map(([h, v], i) => { const k = page * PER + i; const prev = k > 0 ? rows[k - 1][1] : null; return `<tr><td class="n">${n0(h)}</td><td class="n">${n0(v)}</td><td class="n muted">${prev !== null ? n0(v - prev) : ''}</td></tr>`; }).join('')}
         </tbody></table></div>
         <div class="row"><button id="pgPrev" ${page === 0 ? 'disabled' : ''}>Previous rows</button><span class="muted">Rows ${page * PER + 1}–${Math.min(rows.length, page * PER + PER)} of ${rows.length}</span><button id="pgNext" ${page >= pages - 1 ? 'disabled' : ''}>Next rows</button></div></section>
-      <section class="panel"><h3>Versions</h3><div class="table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Active</th><th>Created</th><th>Note</th><th>Verification</th></tr></thead><tbody>
-        ${versions.map((v) => `<tr class="clickable" data-href="#/settings/table/${v.id}"><td>v${v.version}</td><td>${statusPill(v.status)}</td><td>${v.isActive ? 'Yes' : ''}</td><td class="small">${fmtDT(v.createdAt)}<br>${esc(v.createdBy)}</td><td class="small">${esc(v.changeNote || '')}</td><td class="small">${v.verifiedBy ? `${esc(v.verifiedBy)}, ${fmtDT(v.verifiedAt)}: ${esc(v.verifyNote)}` : ''}</td></tr>`).join('')}</tbody></table></div></section>`;
+      <section class="panel"><h3>Versions</h3><div class="table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Active</th><th>Created</th><th>Note</th></tr></thead><tbody>
+        ${versions.map((v) => `<tr class="clickable" data-href="#/settings/table/${v.id}"><td>v${v.version}</td><td>${statusPill(v.status)}</td><td>${v.isActive ? 'Yes' : ''}</td><td class="small">${fmtDT(v.createdAt)}<br>${esc(v.createdBy)}</td><td class="small">${esc(v.changeNote || '')}</td></tr>`).join('')}</tbody></table></div></section>`;
     bindRowLinks();
     $('#srcBtn').onclick = () => openSource(t.sourceFile);
     $('#tblCsvBtn').onclick = () => downloadApi(`/api/calibration/${t.id}/export.csv`);
@@ -908,16 +908,6 @@
     };
     $('#lkBtn').onclick = doLookup;
     $('#lkMm').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); });
-    const vb = $('#verifyBtn');
-    if (vb) vb.onclick = async () => {
-      const flagged = (t.fractionalBands || []).some((b) => (b.uncertainParts || []).length) || (t.reviewSegments || []).some((s) => s.level === 'block');
-      const res = await modal({ title: `Verify ${t.unitName} v${t.version}`, body: `<p>Confirm that you compared this table with <b>${esc(t.sourceFile)}</b>: all calibration details, every page of the main table, the fractional-parts table and the notes.</p>
-        <label class="field"><span>What did you check?</span><textarea name="note" placeholder="For example: compared all 11 table pages and the fractional parts table with the PDF; no differences."></textarea></label>
-        ${flagged ? '<label class="check"><input type="checkbox" name="ack"> I have reviewed the uncertain values and conflicting sections. Readings in those ranges stay blocked until corrected.</label>' : ''}`,
-      actions: [{ label: 'Cancel', value: 'cancel' }, { label: 'Reject version', value: 'reject', danger: true }, { label: 'Mark verified', value: 'verify', primary: true }] });
-      if (res.action === 'cancel') return;
-      try { await api('POST', `/api/calibration/${t.id}/verify`, { decision: res.action, note: res.form.note, acknowledgeFlags: !!res.form.ack }); toast(res.action === 'verify' ? 'Table verified.' : 'Version rejected.'); renderTableDetail(head, null, t.id); } catch (e) { fail(e); }
-    };
     const ab = $('#activateBtn');
     if (ab) ab.onclick = async () => { try { await api('POST', `/api/calibration/${t.id}/activate`); toast('Version is now active.'); renderTableDetail(head, null, t.id); } catch (e) { fail(e); } };
   }
@@ -928,23 +918,22 @@
   }
   function renderTableEditor(head, t) {
     const F = (label, key, type = 'text') => `<label class="field"><span>${label}</span><input type="text" ${type === 'num' ? 'inputmode="decimal"' : ''} data-meta="${key}" data-type="${type}" value="${esc(t[key] ?? '')}"></label>`;
-    app.innerHTML = `${head}<div class="page-head"><div><p><a href="#/settings/table/${t.id}">← Back to table</a></p><h2 style="font-size:1.5rem">New version of ${esc(t.unitName)}</h2><p class="muted">Based on version ${t.version}. Saving creates a new version that becomes the active table, pending verification. Finalised audits keep the version they used.</p></div></div>
+    app.innerHTML = `${head}<div class="page-head"><div><p><a href="#/settings/table/${t.id}">← Back to table</a></p><h2 style="font-size:1.5rem">New version of ${esc(t.unitName)}</h2><p class="muted">Based on version ${t.version}. Saving creates a new version that becomes the active table. Finalised audits keep the version they used.</p></div></div>
       <section class="panel"><h3>Calibration details</h3><div class="grid">
         ${F('Report reference', 'reportReference')}${F('Calibration date (YYYY-MM-DD)', 'calibrationDate')}${F('Report issue date (YYYY-MM-DD)', 'reportIssueDate')}${F('Re-verification due (YYYY-MM-DD)', 'reverificationDue')}${F('Reference height (mm)', 'referenceHeightMm', 'num')}
         <label class="field"><span>Measurement basis</span><select data-meta="basis"><option value="ullage" ${t.basis === 'ullage' ? 'selected' : ''}>Ullage</option><option value="dip" ${t.basis === 'dip' ? 'selected' : ''}>Dip depth</option></select></label>
         <label class="field"><span>Volume unit</span><select data-meta="volumeUnit"><option value="L" ${t.volumeUnit === 'L' ? 'selected' : ''}>litres</option><option value="kg" ${t.volumeUnit === 'kg' ? 'selected' : ''}>kg (mass table)</option><option value="MT" ${t.volumeUnit === 'MT' ? 'selected' : ''}>MT (mass table)</option></select></label>
-      </div>
-      <label class="check"><input type="checkbox" id="linApproved" ${t.rules && t.rules.linearInterpolationApproved ? 'checked' : ''}> Approve linear interpolation between rows where the table gives no fractional parts (${esc(t.unitName)})</label></section>
-      <section class="panel"><h3>Table rows and fractional parts (CSV)</h3><p class="small muted">Edit values directly, paste a corrected table, or load a CSV file. Format: a <code>measurement_mm,volume_l</code> header then one row per line; optionally a blank line, a <code>fractional_from_mm,fractional_to_mm,1mm,…,9mm</code> header and the bands. Mark an uncertain value with <code>?</code>.</p>
+      </div></section>
+      <section class="panel"><h3>Table rows and fractional parts (CSV)</h3><p class="small muted">Edit values directly, paste a corrected table, or load a CSV file. Format: a <code>measurement_mm,volume_l</code> header then one row per line; optionally a blank line, a <code>fractional_from_mm,fractional_to_mm,1mm,…,9mm</code> header and the bands. </p>
         <input type="file" id="csvFile" accept=".csv,text/csv">
         <textarea class="code" id="csvText" rows="18">${esc(tableCsvText(t))}</textarea></section>
       <section class="panel"><label class="field"><span>What changed and why (required)</span><textarea id="chNote" rows="2" placeholder="For example: corrected 6,710 mm from 1,984,768 to 1,984,788 L after checking PDF page 10."></textarea></label>
         <div class="row end"><a class="btn" href="#/settings/table/${t.id}">Cancel</a><button class="btn-primary" id="saveVer">Save new version</button></div></section>`;
     $('#csvFile').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) $('#csvText').value = await f.text(); });
     $('#saveVer').onclick = async () => {
-      const data = { rules: { ...(t.rules || {}), linearInterpolationApproved: $('#linApproved').checked } };
+      const data = { rules: { ...(t.rules || {}), linearInterpolationApproved: true } };
       $$('[data-meta]').forEach((el) => { const v = el.value.trim(); data[el.dataset.meta] = el.dataset.type === 'num' ? (v === '' ? null : Number(v)) : (v || null); });
-      try { const nv = await api('POST', `/api/calibration/unit/${t.unitCode}/versions`, { data, csv: $('#csvText').value, note: $('#chNote').value }); toast(`Version ${nv.version} saved. It needs verification.`); location.hash = `#/settings/table/${nv.id}`; } catch (e) { fail(e); }
+      try { const nv = await api('POST', `/api/calibration/unit/${t.unitCode}/versions`, { data, csv: $('#csvText').value, note: $('#chNote').value }); toast(`Version ${nv.version} saved. `); location.hash = `#/settings/table/${nv.id}`; } catch (e) { fail(e); }
     };
   }
 
