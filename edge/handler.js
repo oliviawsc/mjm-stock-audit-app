@@ -61,7 +61,7 @@ export function makeHandler(deps) {
     }
     if (!Number((await q('SELECT COUNT(*) AS n FROM settings_versions').get()).n)) {
       await q('INSERT INTO settings_versions (version, data, change_note, created_at, created_by) VALUES (?,?,?,?,?)')
-        .run(1, JSON.stringify(defaultSettings(tables.cpoDensityTable)), 'Initial settings. Source-derived values awaiting confirmation.', now, 'system import');
+        .run(1, JSON.stringify(defaultSettings(tables.cpoDensityTable)), 'Initial settings. Values as printed in the calibration PDFs.', now, 'system import');
     }
     if (!Number((await q('SELECT COUNT(*) AS n FROM audits WHERE is_demo = 1').get()).n)) {
       const inputs = juneDemoInputs();

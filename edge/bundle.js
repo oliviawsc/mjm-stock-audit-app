@@ -92,8 +92,9 @@ module.exports = { isLocal, isDate, nowKuching, fmtDate, fmtDateTime, minutesBet
 },
 "lib/settings-default": function (module, exports, require) {
 'use strict';
-// Initial operational settings. Every item that needs a mill decision starts as
-// status "pending" and blocks finalisation of real audits until an Admin confirms it.
+// Initial operational settings. Values come from the calibration PDFs and are in use
+// as printed (status "confirmed"). An Admin can change them under Settings; an item set
+// back to "pending" blocks finalisation of real audits until confirmed again.
 
 function defaultSettings(cpoDensityTable) {
   return {
@@ -106,17 +107,17 @@ function defaultSettings(cpoDensityTable) {
         referenceTempC: null,
         source: cpoDensityTable ? `${cpoDensityTable.name}, ${cpoDensityTable.sourceFile} ${cpoDensityTable.sourcePages}` : null,
         note: cpoDensityTable ? cpoDensityTable.note : null,
-        status: 'pending',
+        status: 'confirmed',
       },
-      adoptedRule: { value: 'average_of_quantities', status: 'pending', note: 'Provisional: average of the three individually calculated quantities, pending mill confirmation.' },
+      adoptedRule: { value: 'average_of_quantities', status: 'confirmed', note: 'Average of the individually calculated quantities (as in the June 2026 report).' },
       repeatTolerance: { ullageMm: null, note: 'Warn when the spread of repeated ullages exceeds this many mm. Not set.' },
     },
     pk: {
       density: {
-        'PK-B1': { value: 0.66, unit: 'kg/L', status: 'pending', wordingConfirmed: false, source: 'PK Bunker No. 1 Table.pdf page 1: "KERNEL SHELL DENSITY: 0.66 kg/l"', note: 'Cover wording says "kernel shell density". Confirm this is the palm kernel bulk density for this bunker.' },
-        'PK-B2': { value: 0.66, unit: 'kg/L', status: 'pending', wordingConfirmed: true, source: 'PK Bunker No. 2 Table.pdf page 1: "KERNEL DENSITY: 0.66 kg/l"', note: 'Source-derived value awaiting confirmation.' },
+        'PK-B1': { value: 0.66, unit: 'kg/L', status: 'confirmed', wordingConfirmed: true, source: 'PK Bunker No. 1 Table.pdf page 1: "KERNEL SHELL DENSITY: 0.66 kg/l"', note: 'Value as printed on the PDF cover.' },
+        'PK-B2': { value: 0.66, unit: 'kg/L', status: 'confirmed', wordingConfirmed: true, source: 'PK Bunker No. 2 Table.pdf page 1: "KERNEL DENSITY: 0.66 kg/l"', note: 'Value as printed on the PDF cover.' },
       },
-      samplingMethod: { value: 'average_ullage', status: 'pending', note: 'How several ullage points across an uneven kernel surface become one adopted ullage. Awaiting mill confirmation.' },
+      samplingMethod: { value: 'average_ullage', status: 'confirmed', note: 'How several ullage points across an uneven kernel surface become one adopted ullage.' },
     },
     diesel: {
       waterBottom: 'subtract_volume_at_water_dip',
