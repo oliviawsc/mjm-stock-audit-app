@@ -10,7 +10,7 @@
 // }
 import { load } from './bundle.js';
 
-const { createRoutes, HttpError, ROLE_RANK } = load('server/routes');
+const { createRoutes, HttpError, ROLE_RANK, sourceName } = load('server/routes');
 const { nowKuching } = load('lib/time');
 const { defaultSettings } = load('lib/settings-default');
 const { juneDemoInputs } = load('lib/demo');
@@ -143,14 +143,16 @@ export function makeHandler(deps) {
     if (method === 'GET' && path === '/sources') return json(await storage.list());
     const sm = path.match(/^\/source-url\/(.+)$/);
     if (method === 'GET' && sm) return json({ url: await storage.signedUrl(decodeURIComponent(sm[1])) });
+    // Stored files are never overwritten, so every table version keeps the PDF it was imported from.
+    // A PDF for a new table version is stored under its own name: <unit>_<YYYYMMDD-HHMMSS UTC>_<file name>.
     if (method === 'POST' && path === '/sources') {
       need('admin');
-      const name = String(body.name || '').replace(/[\\/]/g, '').trim();
-      if (!/\.pdf$/i.test(name)) throw new HttpError(400, 'Only PDF files can be uploaded.');
+      const name = sourceName(body);
       const bytes = Uint8Array.from(atob(String(body.base64 || '')), (c) => c.charCodeAt(0));
       if (bytes.length < 5 || String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') throw new HttpError(400, 'That file is not a PDF.');
+      if ((await storage.list()).includes(name)) throw new HttpError(409, `A document named "${name}" is already stored. It is kept unchanged so earlier table versions still show it.`);
       await storage.upload(name, bytes);
-      return json({ ok: true }, 201);
+      return json({ ok: true, name }, 201);
     }
     return { user };
   }

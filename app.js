@@ -23,7 +23,8 @@
   const unitsOf = (p) => S.meta.units.filter((u) => u.product === p);
   const STATUS_LABEL = { measured: 'Measured', empty: 'Confirmed empty', excluded: 'Excluded' };
   const AUDIT_STATUS = { draft: ['Draft', 'warn'], final: ['Final', 'good'], superseded: ['Superseded', 'neutral'] };
-  const statusPill = (s) => (s === 'rejected' ? '<span class="pill bad">Rejected</span>' : '<span class="pill good">As per PDF</span>');
+  // Calibration table status from the import checks. "verified"/"pending_verification" appear only in audits saved by the earlier system.
+  const statusPill = (s) => (s === 'needs_attention' ? '<span class="pill warn">Import needs attention</span>' : s === 'ready' ? '<span class="pill good">Ready to use</span>' : s === 'verified' ? '<span class="pill neutral">Verified (earlier system)</span>' : `<span class="pill neutral">${esc(s === 'pending_verification' ? 'Recorded before import checks' : s || '')}</span>`);
 
   function parseDate(t) {
     const m = String(t || '').trim().match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
@@ -241,7 +242,7 @@
     const m = x.measurement;
     const t = x.table;
     let h = `<div class="unit-card p-${x.product}"><div class="panel-head"><span class="product-tag ${x.product}">${esc(P()[x.product].short)}</span><h3>${esc(x.name)}</h3><span class="pill ${x.status === 'excluded' ? 'warn' : 'info'}">${STATUS_LABEL[x.status] || 'Status not set'}</span></div>`;
-    if (t) h += `<p class="small muted">Calibration table v${t.version} (as per PDF) · ${esc(t.reportReference)} · calibrated ${fmtDate(t.calibrationDate)} · ${t.basis} in ${t.measurementUnit}, volume in ${t.volumeUnit}</p>`;
+    if (t) h += `<p class="small muted">Calibration table v${t.version} (${t.status === 'needs_attention' ? 'import needs attention' : t.status === 'ready' ? 'ready to use' : esc(t.status || '')}) · ${esc(t.reportReference)} · calibrated ${fmtDate(t.calibrationDate)} · ${t.basis} in ${t.measurementUnit}, volume in ${t.volumeUnit}</p>`;
     if (x.status === 'excluded') return h + `<p><b>Reason:</b> ${esc(x.excludeReason)}</p></div>`;
     if (x.measuredAt) h += `<p><b>${x.product === 'CPO' ? 'Dipping' : 'Measurement'} time:</b> ${fmtDT(x.measuredAt)}</p>`;
     if (x.status === 'empty') h += '<p>Confirmed empty. Quantity 0.</p>';
@@ -296,7 +297,7 @@
     }).join('');
     const demo = d.drafts.find((x) => x.is_demo);
     const groups = {};
-    for (const o of d.outstanding) (groups[o.area] = groups[o.area] || []).push(o.text);
+    for (const o of d.outstanding) (groups[o.area] = groups[o.area] || []).push(o);
     app.innerHTML = `
       <div class="page-head"><div><h1>Dashboard</h1><p class="muted">Latest finalised stock for each product. Products are reported separately and never added together.</p></div>
         ${canEdit() ? '<a class="btn btn-primary" href="#/new">Start a new stock take</a>' : ''}</div>
@@ -310,8 +311,8 @@
           ${d.recent.length ? `<div class="table-wrap"><table><thead><tr><th>Reference</th><th>Audit date</th><th>Finalised</th></tr></thead><tbody>${d.recent.map((x) => `<tr class="clickable" data-href="#/audit/${x.id}"><td>${esc(x.reference)}${x.revision ? ` rev ${x.revision}` : ''} ${x.is_demo ? '<span class="pill info">Demo</span>' : ''}</td><td>${fmtDate(x.audit_date)}</td><td class="small">${fmtDT(x.finalised_at)}<br>${esc(x.finalised_by)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No finalised audits yet.</p>'}
         </section>
       </div>
-      <section class="panel"><div class="panel-head"><h2>Needed before real audits can be finalised</h2><span class="spacer"></span><a href="#/settings">Calibration Tables &amp; Settings</a></div>
-        ${d.outstanding.length ? Object.entries(groups).map(([area, items]) => `<div><h3>${esc(area)}</h3><ul class="issues">${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>`).join('') : '<div class="notice good">All operational inputs are confirmed.</div>'}
+      <section class="panel"><div class="panel-head"><h2>Still to do</h2><span class="spacer"></span><a href="#/settings">Calibration Tables &amp; Settings</a></div>
+        ${d.outstanding.length ? Object.entries(groups).map(([area, items]) => `<div><h3>${esc(area)}</h3>${area === 'Calibration' ? '<p class="small muted">Calibration entries that could not be read from the PDF. Only readings that need them are held.</p>' : ''}<ul class="issues">${items.map((o) => `<li>${o.tableId ? `<a href="#/settings/table/${o.tableId}">${esc(o.text)}</a>` : esc(o.text)}</li>`).join('')}</ul></div>`).join('') : '<div class="notice good">Nothing outstanding. All calibration tables are ready to use and settings are in place.</div>'}
       </section>
       <section class="panel"><h2>Calibration tables</h2>
         <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Version</th><th>Status</th><th>Report reference</th><th>Re-verification due</th></tr></thead><tbody>
@@ -551,7 +552,7 @@
   function tableBadge(code) {
     const t = S.results && S.results.units[code] && S.results.units[code].table;
     if (!t) return '';
-    return `<a class="small" href="#/settings/unit/${code}" target="_blank" rel="noopener">Table v${t.version} · as per PDF</a>`;
+    return `<a class="small" href="#/settings/unit/${code}" target="_blank" rel="noopener">Table v${t.version} · ${t.status === 'needs_attention' ? 'import needs attention' : 'ready to use'}</a>`;
   }
   function step2(inp) {
     if (!inp.products.length) return '<div class="notice warn">Choose at least one product in step 1.</div>';
@@ -814,9 +815,9 @@
       const files = await api('GET', '/api/sources');
       const expected = ['CPO Tank No. 1 Table.pdf', 'CPO Tank No. 2 Table.pdf', 'CPO Tank No. 3 Table.pdf', 'PK Bunker No. 1 Table.pdf', 'PK Bunker No. 2 Table.pdf', 'Diesel Tank Table.pdf', 'MJM Mill Audit - HQ 23.06.2026 - Audit Result CPO 1.pdf'];
       const all = [...new Set([...expected, ...files])];
-      app.innerHTML = `${head}<section class="panel"><h2>Original source documents</h2><p class="muted">Preserved exactly as supplied.</p>
+      app.innerHTML = `${head}<section class="panel"><h2>Original source documents</h2><p class="muted">Preserved exactly as supplied. PDFs imported with a new table version are listed with the storage unit and date in front of the name.</p>
         <div class="table-wrap"><table><thead><tr><th>Document</th><th>Status</th><th></th></tr></thead><tbody>${all.map((f) => `<tr><td>${esc(f)}</td><td>${files.includes(f) ? '<span class="pill good">Available</span>' : '<span class="pill warn">Not uploaded yet</span>'}</td><td>${files.includes(f) ? `<button type="button" class="btn-sm" data-src="${esc(f)}">Open</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
-        ${B && isAdmin() ? `<div class="stack"><h3>Upload source PDFs</h3><p class="small muted">Choose the original PDF files. Keep their file names exactly as listed above so each calibration table links to its document.</p><input type="file" id="srcFiles" accept="application/pdf" multiple><div id="srcOut"></div></div>` : ''}</section>`;
+        ${isAdmin() ? `<div class="stack"><h3>Upload source PDFs</h3><p class="small muted">Choose the original PDF files. Keep their file names exactly as listed above so each calibration table links to its document. Stored documents are never overwritten. To replace a calibration PDF, use <b>Import new version</b> on that table instead.</p><input type="file" id="srcFiles" accept="application/pdf" multiple><div id="srcOut"></div></div>` : ''}</section>`;
       $$('[data-src]').forEach((b) => (b.onclick = () => openSource(b.dataset.src)));
       const sf = $('#srcFiles');
       if (sf) sf.addEventListener('change', async () => {
@@ -832,14 +833,32 @@
       });
     }
   }
+  const STATUS_HELP = {
+    ready: 'All entries were extracted and passed the import checks. The table is used for calculations.',
+    needs_attention: 'Some entries could not be read or did not pass the import checks. Readings that need them are held; every other reading is calculated normally.',
+  };
   async function renderTablesList(head) {
     const d = await api('GET', '/api/calibration');
-    app.innerHTML = `${head}<div class="notice info"><span>All six tables use the figures exactly as printed in the calibration PDFs.</span></div>
-      <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Product</th><th>Active version</th><th>Status</th><th>Basis</th><th>Range (mm)</th><th>Report reference</th><th>Calibrated</th><th>Flags</th></tr></thead><tbody>
-      ${d.units.map((u) => { const t = u.active; return `<tr class="clickable" data-href="#/settings/unit/${u.code}"><td><b>${esc(u.name)}</b></td><td><span class="product-tag ${u.product}">${esc(P()[u.product].short)}</span></td><td>v${t.version}</td><td>${statusPill(t.status)}</td><td>${t.basis === 'dip' ? 'Dip depth' : 'Ullage'}</td><td class="n">${n0(t.validRange.min)}–${n0(t.validRange.max)}</td><td>${esc(t.reportReference)}</td><td>${fmtDate(t.calibrationDate)}</td><td>${t.flags.filter((f) => f.level === 'warn').length ? `<span class="pill warn">${t.flags.filter((f) => f.level === 'warn').length} to review</span>` : '<span class="pill neutral">None</span>'}</td></tr>`; }).join('')}
+    app.innerHTML = `${head}<div class="notice info"><span>Each table follows its calibration PDF exactly. A table is available for calculations as soon as it is imported; entries that cannot be read are never guessed, and only readings that need them are held.</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Product</th><th>Active version</th><th>Status</th><th>Basis</th><th>Range (mm)</th><th>Report reference</th><th>Calibrated</th><th>Source PDF</th></tr></thead><tbody>
+      ${d.units.map((u) => { const t = u.active; return `<tr class="clickable" data-href="#/settings/unit/${u.code}"><td><b>${esc(u.name)}</b></td><td><span class="product-tag ${u.product}">${esc(P()[u.product].short)}</span></td><td>v${t.version}</td><td>${statusPill(t.status)}${t.importCheck && t.importCheck.attention ? ` <span class="small muted">${t.importCheck.attention} to correct</span>` : ''}</td><td>${t.basis === 'dip' ? 'Dip depth' : 'Ullage'}</td><td class="n">${n0(t.validRange.min)}–${n0(t.validRange.max)}</td><td>${esc(t.reportReference)}</td><td>${fmtDate(t.calibrationDate)}</td><td class="small">${esc(t.sourceOriginalName || t.sourceFile)}</td></tr>`; }).join('')}
       </tbody></table></div>`;
     bindRowLinks();
   }
+
+  // URL for showing a source PDF inside the page. Hosted: a short-lived link, loaded as a local copy.
+  const pdfUrlCache = {};
+  async function sourceFrameUrl(file) {
+    if (pdfUrlCache[file]) return pdfUrlCache[file];
+    const { url } = await api('GET', `/api/source-url/${encodeURIComponent(file)}`);
+    if (!B) return (pdfUrlCache[file] = url);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('The source PDF could not be loaded.');
+    return (pdfUrlCache[file] = URL.createObjectURL(new Blob([await res.arrayBuffer()], { type: 'application/pdf' })));
+  }
+  const pageOfRow = (t, mm) => { for (const p of t.pageMap || []) if (mm >= p.min && mm <= p.max) return p.page; return null; };
+  const itemPage = (it) => it.page || (it.pages || [])[0] || null;
+
   async function renderTableDetail(head, unitCode, id, mode) {
     if (!id) { const d = await api('GET', '/api/calibration'); const u = d.units.find((x) => x.code === unitCode); if (!u) throw new Error('Unknown storage unit.'); id = u.active.id; }
     const t = await api('GET', `/api/calibration/${id}`);
@@ -851,13 +870,26 @@
     const rows = t.rows;
     const pages = Math.ceil(rows.length / PER);
     const tp = t.tankDetails || {};
+    const items = t.importCheck.items;
+    const attention = items.filter((i) => i.level === 'attention');
+    const notes = items.filter((i) => i.level === 'note');
+    const heldRows = new Map(attention.filter((i) => i.kind === 'row').map((i) => [i.mm, i]));
+    const heldParts = new Map(attention.filter((i) => i.kind === 'part').map((i) => [i.key, i]));
+    const marks = new Map((t.sourceMarks || []).map((m) => [m.kind === 'row' ? `r${m.mm}` : `p${m.from}|${m.to}|${m.part}`, m]));
+    const canFix = isAdmin() && t.isActive;
+    const itemLi = (it, idx) => `<li><span class="pill warn">${itemPage(it) ? `PDF page ${itemPage(it)}` : 'Page not recorded'}</span> ${esc(it.text)}
+      <span class="row">${itemPage(it) ? `<button type="button" class="btn-sm" data-pdfpage="${itemPage(it)}">Show page ${itemPage(it)}</button>` : ''}${canFix ? `<button type="button" class="btn-sm btn-primary" data-fix="${idx}">Enter value from PDF</button>` : ''}</span></li>`;
     app.innerHTML = `${head}
       <div class="page-head"><div><p><a href="#/settings">← All tables</a></p><h2 style="font-size:1.5rem">${esc(t.unitName)} · version ${t.version}</h2></div>
         <div class="row">${statusPill(t.status)}${t.isActive ? '<span class="pill info">Active</span>' : '<span class="pill neutral">Not active</span>'}
-        <button type="button" id="srcBtn">Open source PDF</button>
+        <button type="button" id="pdfSideBtn">Show PDF beside table</button>
+        <button type="button" id="srcBtn">Open PDF in new tab</button>
         <button type="button" id="tblCsvBtn">Export CSV</button>
-        ${isAdmin() ? `<a class="btn" href="#/settings/table/${t.id}/edit">Correct / import new version</a>${!t.isActive && t.status !== 'rejected' ? '<button id="activateBtn">Make active</button>' : ''}` : ''}</div></div>
-      ${t.status === 'rejected' ? '<div class="notice bad">Rejected version: cannot be used to finalise a real audit.</div>' : '<div class="notice good">Figures are used exactly as printed in the source PDF.</div>'}
+        ${isAdmin() ? `<a class="btn" href="#/settings/table/${t.id}/edit">Import new version</a>${!t.isActive ? '<button id="activateBtn">Make this the active version</button>' : ''}` : ''}</div></div>
+      <div class="split" id="split"><div class="split-main">
+      ${t.status === 'ready' ? `<div class="notice good"><strong>Ready to use</strong><span>${STATUS_HELP.ready} Source: ${esc(t.sourceOriginalName || t.sourceFile)}.</span></div>`
+        : `<section class="notice warn"><strong>Import needs attention: ${attention.length} ${attention.length === 1 ? 'entry' : 'entries'} to correct</strong><span>${STATUS_HELP.needs_attention}</span>
+          <ul class="issues">${attention.map(itemLi).join('')}</ul>${!t.isActive ? '<span class="small">Corrections are made on the active version.</span>' : ''}</section>`}
       <div class="grid-2">
         <section class="panel"><h3>Calibration details</h3><dl class="kv">
           <dt>Storage unit</dt><dd>${esc(t.unitName)} (${esc(t.unitCode)})</dd>
@@ -871,29 +903,58 @@
           ${t.reverificationDue ? `<dt>Re-verification due</dt><dd>${fmtDate(t.reverificationDue)}</dd>` : ''}
           <dt>Calibrated by</dt><dd>${esc(t.calibratedBy)}</dd><dt>Standard</dt><dd>${esc(t.standard)}</dd><dt>Method</dt><dd>${esc(t.method)}</dd>
           <dt>Table basis</dt><dd>${esc(t.tableBasisNote || '')}</dd>
-          <dt>Source file</dt><dd>${esc(t.sourceFile)}</dd>
+          <dt>Source PDF</dt><dd>${esc(t.sourceOriginalName || t.sourceFile)}</dd>
           <dt>Source pages</dt><dd>${esc(Object.entries(t.sourcePages || {}).map(([k, v]) => `${k.replace(/([A-Z])/g, ' $1').toLowerCase()}: p${v.join(', ')}`).join('; '))}</dd>
           <dt>Version note</dt><dd>${esc(t.changeNote || '')} <span class="muted small">(${fmtDT(t.createdAt)}, ${esc(t.createdBy)})</span></dd>
         </dl></section>
         <section class="panel"><h3>Tank details from certificate</h3><dl class="kv">
-          ${Object.entries(tp).map(([k, v]) => `<dt>${esc(k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/ Mm$/, ' (mm)').replace(/ L$/, ' (L)').replace(/ M$/, ' (m)').replace(/ C$/, ' (°C)'))}</dt><dd>${typeof v === 'number' ? v.toLocaleString('en-MY') : esc(v)}</dd>`).join('')}
-          <dt>Capacity check</dt><dd>${t.checks && t.checks.capacityCheck ? (t.checks.capacityCheck.matches ? '<span class="pill good">Table end-point equals certificate maximum filling volume</span>' : '<span class="pill bad">Does not match certificate</span>') : '–'}</dd></dl>
-          <h3>Lookup method</h3><p>${esc(t.interpolationNote || '')}</p>
-          <p>Where the table gives no fractional parts, the volume is interpolated linearly between the printed rows.</p>
-          <p class="small muted">Values outside the valid range are rejected. There is no extrapolation.</p>
+          ${Object.entries(tp).map(([k, v]) => `<dt>${esc(k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/ Mm$/, ' (mm)').replace(/ L$/, ' (L)').replace(/ M$/, ' (m)').replace(/ C$/, ' (°C)'))}</dt><dd>${typeof v === 'number' ? v.toLocaleString('en-MY') : esc(v)}</dd>`).join('')}</dl>
+          <h3>Lookup method (from the PDF)</h3><p>${esc(t.interpolationNote || '')}</p>
+          <p class="small muted">Where the table gives no fractional parts, the volume is interpolated linearly between the printed rows and the result says so. Values outside the valid range are rejected; there is no extrapolation.</p>
         </section>
       </div>
-      ${t.flags.length || (t.reviewSegments || []).length ? `<section class="panel"><h3>Notes on the source document</h3><ul class="issues">${(t.reviewSegments || []).map((s) => `<li><span class="pill neutral">${n0(s.from)}–${n0(s.to)} mm</span> ${esc(s.reason)}</li>`).join('')}${t.flags.map((f) => `<li><span class="pill neutral">Note</span> ${esc(f.text)}</li>`).join('')}</ul></section>` : ''}
+      ${t.flags.length || notes.length ? `<section class="panel"><h3>Notes on the source document</h3><ul class="issues">${notes.map((i) => `<li><span class="pill neutral">${n0(i.from)}–${n0(i.to)} mm</span> ${esc(i.text)}</li>`).join('')}${t.flags.map((f) => `<li><span class="pill neutral">Note</span> ${esc(f.text)}</li>`).join('')}</ul></section>` : ''}
       <section class="panel"><h3>Try a lookup</h3><div class="row"><label class="field" style="max-width:260px"><span>${t.basis === 'dip' ? 'Dip' : 'Ullage'} (mm)</span><input type="text" inputmode="decimal" id="lkMm"></label><button id="lkBtn" style="align-self:flex-end">Look up</button></div><div id="lkOut"></div></section>
-      ${(t.fractionalBands || []).length ? `<section class="panel"><h3>Fractional / proportional parts (litres)</h3><div class="table-wrap"><table><thead><tr><th>From (mm)</th><th>To (mm)</th>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `<th class="n">${k} mm</th>`).join('')}</tr></thead><tbody>${t.fractionalBands.map((b) => `<tr><td>${n0(b.from)}</td><td>${n0(b.to)}</td>${b.parts.map((x, i) => `<td class="n">${x}${(b.uncertainParts || []).includes(i + 1) ? ' <span class="pill bad">?</span>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>` : ''}
+      ${(t.fractionalBands || []).length ? `<section class="panel"><h3>Fractional / proportional parts (litres)</h3><div class="table-wrap"><table><thead><tr><th>From (mm)</th><th>To (mm)</th>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `<th class="n">${k} mm</th>`).join('')}<th>PDF page</th></tr></thead><tbody>${t.fractionalBands.map((b) => `<tr><td>${n0(b.from)}</td><td>${n0(b.to)}</td>${b.parts.map((x, i) => { const key = `${b.from}|${b.to}|${i + 1}`; const m = marks.get(`p${key}`); const h = heldParts.get(key); return `<td class="n${h ? ' cell-flag' : ''}"${h ? ` title="${esc(h.text)}"` : ''}>${x === null ? `<span class="pill bad">${m && m.printed ? `“${esc(m.printed)}” unreadable` : 'unreadable'}</span>` : x}</td>`; }).join('')}<td>${(b.pages || []).map((pg) => `<button type="button" class="btn-link" data-pdfpage="${pg}">${pg}</button>`).join(' ') || '–'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
       <section class="panel"><div class="panel-head"><h3>Main table rows</h3><span class="spacer"></span><label class="field" style="flex-direction:row;align-items:center"><span class="small">Jump to mm</span><input type="text" inputmode="numeric" id="jump" style="width:120px;min-height:40px"></label></div>
-        <div class="table-wrap"><table><thead><tr><th class="n">${t.basis === 'dip' ? 'Dip' : 'Ullage'} (mm)</th><th class="n">Volume (L)</th><th class="n">Change from previous row (L)</th></tr></thead><tbody>
-        ${rows.slice(page * PER, page * PER + PER).map(([h, v], i) => { const k = page * PER + i; const prev = k > 0 ? rows[k - 1][1] : null; return `<tr><td class="n">${n0(h)}</td><td class="n">${n0(v)}</td><td class="n muted">${prev !== null ? n0(v - prev) : ''}</td></tr>`; }).join('')}
+        <div class="table-wrap"><table><thead><tr><th class="n">${t.basis === 'dip' ? 'Dip' : 'Ullage'} (mm)</th><th class="n">Volume (L)</th><th class="n">Change from previous row (L)</th><th>PDF page</th></tr></thead><tbody>
+        ${rows.slice(page * PER, page * PER + PER).map(([h, v], i) => { const k = page * PER + i; const prev = k > 0 ? rows[k - 1][1] : null; const held = heldRows.get(h); const m = marks.get(`r${h}`); const pg = pageOfRow(t, h); return `<tr${held ? ` class="row-flag" title="${esc(held.text)}"` : ''}><td class="n">${n0(h)}</td><td class="n">${v === null ? `<span class="pill bad">${m && m.printed ? `“${esc(m.printed)}” unreadable` : 'unreadable'}</span>` : n0(v)}${held && v !== null ? ' <span class="pill warn">check</span>' : ''}</td><td class="n muted">${prev !== null && v !== null ? n0(v - prev) : ''}</td><td>${pg ? `<button type="button" class="btn-link" data-pdfpage="${pg}">${pg}</button>` : ''}</td></tr>`; }).join('')}
         </tbody></table></div>
         <div class="row"><button id="pgPrev" ${page === 0 ? 'disabled' : ''}>Previous rows</button><span class="muted">Rows ${page * PER + 1}–${Math.min(rows.length, page * PER + PER)} of ${rows.length}</span><button id="pgNext" ${page >= pages - 1 ? 'disabled' : ''}>Next rows</button></div></section>
-      <section class="panel"><h3>Versions</h3><div class="table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Active</th><th>Created</th><th>Note</th></tr></thead><tbody>
-        ${versions.map((v) => `<tr class="clickable" data-href="#/settings/table/${v.id}"><td>v${v.version}</td><td>${statusPill(v.status)}</td><td>${v.isActive ? 'Yes' : ''}</td><td class="small">${fmtDT(v.createdAt)}<br>${esc(v.createdBy)}</td><td class="small">${esc(v.changeNote || '')}</td></tr>`).join('')}</tbody></table></div></section>`;
+      <section class="panel"><h3>Version history</h3><p class="small muted">Each import or correction is a new version. Finalised audits keep the version (and PDF) they used.</p><div class="table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Active</th><th>Source PDF</th><th>Created</th><th>Note</th></tr></thead><tbody>
+        ${versions.map((v) => `<tr class="clickable" data-href="#/settings/table/${v.id}"><td>v${v.version}</td><td>${statusPill(v.status)}</td><td>${v.isActive ? 'Yes' : ''}</td><td class="small">${esc(v.sourceFile || '')}</td><td class="small">${fmtDT(v.createdAt)}<br>${esc(v.createdBy)}</td><td class="small">${esc(v.changeNote || '')}</td></tr>`).join('')}</tbody></table></div></section>
+      </div><aside class="split-pdf" id="pdfPane" hidden><div class="row"><b class="spacer">${esc(t.sourceOriginalName || t.sourceFile)}</b><button type="button" class="btn-sm" id="pdfClose">Close</button></div><iframe id="pdfFrame" title="Source PDF"></iframe></aside></div>`;
     bindRowLinks();
+    const wide = () => window.matchMedia('(min-width: 1100px)').matches;
+    const showPdf = async (pg) => {
+      if (!wide()) { // phones and small tablets: open the PDF itself
+        const w = pendingTab();
+        try { const url = await sourceFrameUrl(t.sourceFile); if (w) w.location = url + (pg ? `#page=${pg}` : ''); } catch (e) { if (w) w.close(); fail(e); }
+        return;
+      }
+      try {
+        const url = await sourceFrameUrl(t.sourceFile);
+        $('#split').classList.add('open'); $('#pdfPane').hidden = false;
+        const f = $('#pdfFrame'); f.src = 'about:blank';
+        setTimeout(() => { f.src = url + (pg ? `#page=${pg}` : ''); }, 30);
+      } catch (e) { fail(e); }
+    };
+    $('#pdfSideBtn').onclick = () => showPdf(null);
+    $('#pdfClose').onclick = () => { $('#split').classList.remove('open'); $('#pdfPane').hidden = true; $('#pdfFrame').src = 'about:blank'; };
+    $$('[data-pdfpage]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); showPdf(Number(b.dataset.pdfpage)); }));
+    $$('[data-fix]').forEach((b) => (b.onclick = async () => {
+      const it = attention[Number(b.dataset.fix)];
+      const where = it.kind === 'row' ? `Row ${n0(it.mm)} mm` : `Fractional parts ${n0(it.band.from)}–${n0(it.band.to)} mm, ${it.part} mm column`;
+      if (itemPage(it)) showPdf(itemPage(it));
+      const res = await modal({ title: 'Enter value from the PDF', body: `<p>${esc(where)}${itemPage(it) ? `, PDF page ${itemPage(it)}` : ''}.</p><p class="small muted">${esc(it.text)}</p>
+        <label class="field"><span>Value exactly as printed in the PDF (litres)</span><input name="value" inputmode="decimal" value="${it.value ?? ''}"></label>
+        <label class="field"><span>Note (optional)</span><input name="note" placeholder="For example: read from the paper original"></label>
+        <p class="small muted">This saves a new version of the table. Enter the extracted value unchanged to record that it matches the PDF.</p>`,
+      actions: [{ label: 'Cancel', value: 'cancel' }, { label: 'Save', value: 'save', primary: true }] });
+      if (res.action !== 'save') return;
+      const body = it.kind === 'row' ? { kind: 'row', mm: it.mm } : { kind: 'part', from: it.band.from, to: it.band.to, part: it.part };
+      try { const nv = await api('POST', `/api/calibration/${t.id}/resolve`, { ...body, value: res.form.value, note: res.form.note }); toast(`Saved as version ${nv.version}. ${nv.status === 'ready' ? 'Ready to use.' : `${nv.importCheck.attention} still to correct.`}`); location.hash = `#/settings/table/${nv.id}`; } catch (e) { fail(e); }
+    }));
     $('#srcBtn').onclick = () => openSource(t.sourceFile);
     $('#tblCsvBtn').onclick = () => downloadApi(`/api/calibration/${t.id}/export.csv`);
     $('#pgPrev').onclick = () => { S.rowsPage[t.id] = page - 1; renderTableDetail(head, null, t.id); };
@@ -912,28 +973,53 @@
     if (ab) ab.onclick = async () => { try { await api('POST', `/api/calibration/${t.id}/activate`); toast('Version is now active.'); renderTableDetail(head, null, t.id); } catch (e) { fail(e); } };
   }
   function tableCsvText(t) {
-    const L = ['measurement_mm,volume_l', ...t.rows.map(([h, v]) => `${h},${v}`)];
-    if ((t.fractionalBands || []).length) { L.push('', 'fractional_from_mm,fractional_to_mm,1mm,2mm,3mm,4mm,5mm,6mm,7mm,8mm,9mm'); for (const b of t.fractionalBands) L.push([b.from, b.to, ...b.parts.map((x, i) => `${x}${(b.uncertainParts || []).includes(i + 1) ? '?' : ''}`)].join(',')); }
+    const marks = new Map((t.sourceMarks || []).map((m) => [m.kind === 'row' ? `r${m.mm}` : `p${m.from}|${m.to}|${m.part}`, m]));
+    const cell = (v, key) => (v === null ? `${(marks.get(key) || {}).printed || ''}?` : v);
+    const L = ['measurement_mm,volume_l,pdf_page', ...t.rows.map(([h, v]) => `${h},${cell(v, `r${h}`)},${pageOfRow(t, h) || ''}`)];
+    if ((t.fractionalBands || []).length) { L.push('', 'fractional_from_mm,fractional_to_mm,1mm,2mm,3mm,4mm,5mm,6mm,7mm,8mm,9mm,pdf_pages'); for (const b of t.fractionalBands) L.push([b.from, b.to, ...b.parts.map((x, i) => cell(x, `p${b.from}|${b.to}|${i + 1}`)), (b.pages || []).join(';')].join(',')); }
     return L.join('\n');
+  }
+  async function fileBase64(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    return btoa(bin);
   }
   function renderTableEditor(head, t) {
     const F = (label, key, type = 'text') => `<label class="field"><span>${label}</span><input type="text" ${type === 'num' ? 'inputmode="decimal"' : ''} data-meta="${key}" data-type="${type}" value="${esc(t[key] ?? '')}"></label>`;
-    app.innerHTML = `${head}<div class="page-head"><div><p><a href="#/settings/table/${t.id}">← Back to table</a></p><h2 style="font-size:1.5rem">New version of ${esc(t.unitName)}</h2><p class="muted">Based on version ${t.version}. Saving creates a new version that becomes the active table. Finalised audits keep the version they used.</p></div></div>
+    app.innerHTML = `${head}<div class="page-head"><div><p><a href="#/settings/table/${t.id}">← Back to table</a></p><h2 style="font-size:1.5rem">Import a new version of ${esc(t.unitName)}</h2><p class="muted">Based on version ${t.version}. The new version is checked against the PDF rules and becomes the active table straight away. Finalised audits keep the version and PDF they used.</p></div></div>
+      <section class="panel"><h3>Calibration PDF</h3>
+        <p class="small muted">Current PDF: <b>${esc(t.sourceOriginalName || t.sourceFile)}</b>. To replace the calibration (for example after re-calibration), choose the new PDF and enter its values below. The current PDF is kept with the earlier version.</p>
+        <input type="file" id="pdfFile" accept="application/pdf"></section>
       <section class="panel"><h3>Calibration details</h3><div class="grid">
         ${F('Report reference', 'reportReference')}${F('Calibration date (YYYY-MM-DD)', 'calibrationDate')}${F('Report issue date (YYYY-MM-DD)', 'reportIssueDate')}${F('Re-verification due (YYYY-MM-DD)', 'reverificationDue')}${F('Reference height (mm)', 'referenceHeightMm', 'num')}
         <label class="field"><span>Measurement basis</span><select data-meta="basis"><option value="ullage" ${t.basis === 'ullage' ? 'selected' : ''}>Ullage</option><option value="dip" ${t.basis === 'dip' ? 'selected' : ''}>Dip depth</option></select></label>
         <label class="field"><span>Volume unit</span><select data-meta="volumeUnit"><option value="L" ${t.volumeUnit === 'L' ? 'selected' : ''}>litres</option><option value="kg" ${t.volumeUnit === 'kg' ? 'selected' : ''}>kg (mass table)</option><option value="MT" ${t.volumeUnit === 'MT' ? 'selected' : ''}>MT (mass table)</option></select></label>
-      </div></section>
-      <section class="panel"><h3>Table rows and fractional parts (CSV)</h3><p class="small muted">Edit values directly, paste a corrected table, or load a CSV file. Format: a <code>measurement_mm,volume_l</code> header then one row per line; optionally a blank line, a <code>fractional_from_mm,fractional_to_mm,1mm,…,9mm</code> header and the bands. </p>
+      </div>
+      <label class="field"><span>Lookup method as stated in the PDF</span><textarea data-meta="interpolationNote" rows="3">${esc(t.interpolationNote || '')}</textarea></label></section>
+      <section class="panel"><h3>Table values from the PDF (CSV)</h3><p class="small muted">One row per line: <code>measurement_mm,volume_l,pdf_page</code>. Fractional parts after a blank line: <code>fractional_from_mm,fractional_to_mm,1mm,…,9mm,pdf_pages</code>. Enter every value exactly as printed. If a value cannot be read, enter <code>?</code>, or the visible characters followed by <code>?</code> (for example <code>14_.7?</code>). Never guess: the entry is listed for correction with its page and row, and only readings that need it are held.</p>
         <input type="file" id="csvFile" accept=".csv,text/csv">
         <textarea class="code" id="csvText" rows="18">${esc(tableCsvText(t))}</textarea></section>
-      <section class="panel"><label class="field"><span>What changed and why (required)</span><textarea id="chNote" rows="2" placeholder="For example: corrected 6,710 mm from 1,984,768 to 1,984,788 L after checking PDF page 10."></textarea></label>
-        <div class="row end"><a class="btn" href="#/settings/table/${t.id}">Cancel</a><button class="btn-primary" id="saveVer">Save new version</button></div></section>`;
+      <section class="panel"><label class="field"><span>What changed and why (required)</span><textarea id="chNote" rows="2" placeholder="For example: new calibration certificate after tank repair, or: corrected 6,710 mm from 1,984,768 to 1,984,788 L as printed on PDF page 10."></textarea></label>
+        <div class="row end"><a class="btn" href="#/settings/table/${t.id}">Cancel</a><button class="btn-primary" id="saveVer">Import and check</button></div></section>`;
     $('#csvFile').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) $('#csvText').value = await f.text(); });
     $('#saveVer').onclick = async () => {
-      const data = { rules: { ...(t.rules || {}), linearInterpolationApproved: true } };
+      const data = {};
       $$('[data-meta]').forEach((el) => { const v = el.value.trim(); data[el.dataset.meta] = el.dataset.type === 'num' ? (v === '' ? null : Number(v)) : (v || null); });
-      try { const nv = await api('POST', `/api/calibration/unit/${t.unitCode}/versions`, { data, csv: $('#csvText').value, note: $('#chNote').value }); toast(`Version ${nv.version} saved. `); location.hash = `#/settings/table/${nv.id}`; } catch (e) { fail(e); }
+      const btn = $('#saveVer'); btn.disabled = true;
+      try {
+        const body = { data, csv: $('#csvText').value, note: $('#chNote').value };
+        const pdf = $('#pdfFile').files[0];
+        if (pdf) {
+          if (String(body.note).trim().length < 5) throw new Error('Describe what changed in this version.');
+          btn.textContent = 'Uploading PDF…';
+          const up = await api('POST', '/api/sources', { name: pdf.name, base64: await fileBase64(pdf), unit: t.unitCode });
+          Object.assign(body, { sourceFile: up.name, sourceOriginalName: pdf.name });
+        }
+        btn.textContent = 'Checking…';
+        const nv = await api('POST', `/api/calibration/unit/${t.unitCode}/versions`, body);
+        toast(`Version ${nv.version} imported: ${nv.status === 'ready' ? 'Ready to use.' : `Import needs attention (${nv.importCheck.attention} to correct).`}`);
+        location.hash = `#/settings/table/${nv.id}`;
+      } catch (e) { fail(e); btn.disabled = false; btn.textContent = 'Import and check'; }
     };
   }
 

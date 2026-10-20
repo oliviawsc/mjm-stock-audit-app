@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-15T08:28:13.586Z",
+ "generatedAt": "2026-10-20T02:03:00.498Z",
  "extraction": "Visual transcription of scanned PDF pages (no text layer). Every column was entered with its starting row and checked for column alignment; the volume increments were checked row by row for slips; each final row agrees with the maximum filling volume on the certificate.",
  "tables": [
   {
@@ -71,7 +71,6 @@
     }
    ],
    "version": 1,
-   "status": "verified",
    "validRange": {
     "min": 410,
     "max": 15092,
@@ -5964,6 +5963,63 @@
      7554
     ]
    ],
+   "pageMap": [
+    {
+     "min": 410,
+     "max": 1310,
+     "page": 14
+    },
+    {
+     "min": 1320,
+     "max": 2690,
+     "page": 13
+    },
+    {
+     "min": 2700,
+     "max": 4070,
+     "page": 12
+    },
+    {
+     "min": 4080,
+     "max": 5450,
+     "page": 11
+    },
+    {
+     "min": 5460,
+     "max": 6830,
+     "page": 10
+    },
+    {
+     "min": 6840,
+     "max": 8210,
+     "page": 9
+    },
+    {
+     "min": 8220,
+     "max": 9590,
+     "page": 8
+    },
+    {
+     "min": 9600,
+     "max": 10970,
+     "page": 7
+    },
+    {
+     "min": 10980,
+     "max": 12350,
+     "page": 6
+    },
+    {
+     "min": 12360,
+     "max": 13730,
+     "page": 5
+    },
+    {
+     "min": 13740,
+     "max": 15092,
+     "page": 4
+    }
+   ],
    "fractionalBands": [
     {
      "from": 15091,
@@ -5979,7 +6035,9 @@
       1886.7,
       2122.5
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14942,
@@ -5995,7 +6053,9 @@
       1794.1,
       2018.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14870,
@@ -6011,7 +6071,9 @@
       1886.7,
       2122.5
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14615,
@@ -6027,7 +6089,9 @@
       1884.8,
       2120.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14581,
@@ -6043,7 +6107,9 @@
       1886.8,
       2122.6
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14432,
@@ -6059,7 +6125,9 @@
       1888.7,
       2124.8
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14320,
@@ -6075,7 +6143,9 @@
       1889,
       2125.1
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14101,
@@ -6091,7 +6161,9 @@
       1888.7,
       2124.8
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 13781,
@@ -6107,7 +6179,9 @@
       1886.7,
       2122.5
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 13292,
@@ -6123,7 +6197,9 @@
       1887.3,
       2123.2
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 11447,
@@ -6139,7 +6215,9 @@
       1887.9,
       2123.9
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 9607,
@@ -6155,7 +6233,9 @@
       1888.7,
       2124.8
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 7767,
@@ -6171,7 +6251,9 @@
       1888.5,
       2124.6
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 5932,
@@ -6187,7 +6269,9 @@
       1888.1,
       2124.1
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 4097,
@@ -6203,7 +6287,9 @@
       1889.4,
       2125.5
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 2260,
@@ -6219,24 +6305,15 @@
       1890.7,
       2127
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     }
    ],
-   "reviewSegments": [],
+   "sourceMarks": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
-   },
-   "checks": {
-    "capacityCheck": {
-     "tableEndpoint": [
-      410,
-      3472599
-     ],
-     "certificateMaxFillL": 3472599,
-     "matches": true
-    }
    }
   },
   {
@@ -6304,7 +6381,6 @@
     }
    ],
    "version": 1,
-   "status": "verified",
    "validRange": {
     "min": 412,
     "max": 15112,
@@ -12201,6 +12277,63 @@
      7270
     ]
    ],
+   "pageMap": [
+    {
+     "min": 412,
+     "max": 1320,
+     "page": 14
+    },
+    {
+     "min": 1330,
+     "max": 2700,
+     "page": 13
+    },
+    {
+     "min": 2710,
+     "max": 4080,
+     "page": 12
+    },
+    {
+     "min": 4090,
+     "max": 5460,
+     "page": 11
+    },
+    {
+     "min": 5470,
+     "max": 6840,
+     "page": 10
+    },
+    {
+     "min": 6850,
+     "max": 8220,
+     "page": 9
+    },
+    {
+     "min": 8230,
+     "max": 9600,
+     "page": 8
+    },
+    {
+     "min": 9610,
+     "max": 10980,
+     "page": 7
+    },
+    {
+     "min": 10990,
+     "max": 12360,
+     "page": 6
+    },
+    {
+     "min": 12370,
+     "max": 13740,
+     "page": 5
+    },
+    {
+     "min": 13750,
+     "max": 15112,
+     "page": 4
+    }
+   ],
    "fractionalBands": [
     {
      "from": 15112,
@@ -12216,7 +12349,9 @@
       1886.9,
       2122.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14968,
@@ -12232,7 +12367,9 @@
       1837.3,
       2067
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14841,
@@ -12248,7 +12385,9 @@
       1886.9,
       2122.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14651,
@@ -12264,7 +12403,9 @@
       1888.8,
       2125
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14617,
@@ -12280,7 +12421,9 @@
       1887,
       2122.8
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14425,
@@ -12296,7 +12439,9 @@
       1888.8,
       2125
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14278,
@@ -12312,7 +12457,9 @@
       1889.3,
       2125.5
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14059,
@@ -12328,7 +12475,9 @@
       1888.8,
       2125
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 13861,
@@ -12344,7 +12493,9 @@
       1886.9,
       2122.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 13297,
@@ -12360,7 +12511,9 @@
       1886.6,
       2122.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 11457,
@@ -12376,7 +12529,9 @@
       1886.8,
       2122.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 9632,
@@ -12392,7 +12547,9 @@
       1886.3,
       2122
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 7787,
@@ -12408,7 +12565,9 @@
       1884.8,
       2120.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 5962,
@@ -12424,7 +12583,9 @@
       1884.7,
       2120.3
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 4112,
@@ -12440,7 +12601,9 @@
       1885.7,
       2121.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 2287,
@@ -12456,24 +12619,15 @@
       1886.1,
       2121.9
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     }
    ],
-   "reviewSegments": [],
+   "sourceMarks": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
-   },
-   "checks": {
-    "capacityCheck": {
-     "tableEndpoint": [
-      412,
-      3472139
-     ],
-     "certificateMaxFillL": 3472139,
-     "matches": true
-    }
    }
   },
   {
@@ -12540,12 +12694,11 @@
      "text": "Rows with ullage below 1,828 mm are marked \"* gauging height above safe filling height\"."
     },
     {
-     "level": "warn",
-     "text": "PDF page 11 rows 5,790 to 5,680 mm are smudged in the scan. Values were read and agree with the 239.5 L/mm increments; check against the paper original."
+     "level": "info",
+     "text": "PDF page 11 rows 5,790 to 5,680 mm are smudged in the scan. The values are legible and pass the import checks (they follow the 239.5 L/mm increments)."
     }
    ],
    "version": 1,
-   "status": "verified",
    "validRange": {
     "min": 1093,
     "max": 15779,
@@ -18438,6 +18591,63 @@
      6811
     ]
    ],
+   "pageMap": [
+    {
+     "min": 1093,
+     "max": 1990,
+     "page": 14
+    },
+    {
+     "min": 2000,
+     "max": 3370,
+     "page": 13
+    },
+    {
+     "min": 3380,
+     "max": 4750,
+     "page": 12
+    },
+    {
+     "min": 4760,
+     "max": 6130,
+     "page": 11
+    },
+    {
+     "min": 6140,
+     "max": 7510,
+     "page": 10
+    },
+    {
+     "min": 7520,
+     "max": 8890,
+     "page": 9
+    },
+    {
+     "min": 8900,
+     "max": 10270,
+     "page": 8
+    },
+    {
+     "min": 10280,
+     "max": 11650,
+     "page": 7
+    },
+    {
+     "min": 11660,
+     "max": 13030,
+     "page": 6
+    },
+    {
+     "min": 13040,
+     "max": 14410,
+     "page": 5
+    },
+    {
+     "min": 14420,
+     "max": 15779,
+     "page": 4
+    }
+   ],
    "fractionalBands": [
     {
      "from": 15727,
@@ -18453,7 +18663,9 @@
       1886.3,
       2122.1
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 15521,
@@ -18469,7 +18681,9 @@
       1914.4,
       2153.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 15490,
@@ -18485,7 +18699,9 @@
       1913.1,
       2152.2
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 15339,
@@ -18501,7 +18717,9 @@
       1915,
       2154.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 15233,
@@ -18517,7 +18735,9 @@
       1916.4,
       2156
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14908,
@@ -18533,7 +18753,9 @@
       1916.9,
       2156.5
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14689,
@@ -18549,7 +18771,9 @@
       1916.4,
       2156
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 14549,
@@ -18565,7 +18789,9 @@
       1914.4,
       2153.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 13913,
@@ -18581,7 +18807,9 @@
       1914.1,
       2153.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 12076,
@@ -18597,7 +18825,9 @@
       1915.3,
       2154.7
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 10256,
@@ -18613,7 +18843,9 @@
       1916.5,
       2156
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 8426,
@@ -18629,7 +18861,9 @@
       1916.3,
       2155.9
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 6591,
@@ -18645,7 +18879,9 @@
       1915.9,
       2155.4
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 4766,
@@ -18661,7 +18897,9 @@
       1914.1,
       2153.3
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     },
     {
      "from": 2941,
@@ -18677,24 +18915,15 @@
       1913.7,
       2152.9
      ],
-     "uncertainParts": []
+     "pages": [
+      3
+     ]
     }
    ],
-   "reviewSegments": [],
+   "sourceMarks": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
-   },
-   "checks": {
-    "capacityCheck": {
-     "tableEndpoint": [
-      1093,
-      3519136
-     ],
-     "certificateMaxFillL": 3519136,
-     "matches": true
-    }
    }
   },
   {
@@ -18756,16 +18985,16 @@
    },
    "flags": [
     {
-     "level": "warn",
-     "text": "PDF page 1 cover reads \"KERNEL SHELL DENSITY: 0.66 kg/l\" for a PK bunker. Confirm whether this is the palm kernel bulk density."
+     "level": "info",
+     "text": "PDF page 1 cover reads \"KERNEL SHELL DENSITY: 0.66 kg/l\" for a PK bunker; the 0.66 kg/L value is used as the bulk density in Settings."
     },
     {
-     "level": "warn",
-     "text": "PDF page 2 cover has handwritten \"PKS\", and \"0.68\" (circled) and \"0.62\" written by hand. Their meaning is not stated."
+     "level": "info",
+     "text": "PDF page 2 cover has handwritten \"PKS\", and \"0.68\" (circled) and \"0.62\" written by hand. Their meaning is not stated; they are not used."
     },
     {
-     "level": "warn",
-     "text": "Report number SCHUTTER/CAL/0306/2013 is the same number printed on the Diesel Tank No. 1 report. Confirm the correct reference."
+     "level": "info",
+     "text": "Report number SCHUTTER/CAL/0306/2013 is the same number printed on the Diesel Tank No. 1 report. Both PDFs print it this way."
     },
     {
      "level": "info",
@@ -18773,7 +19002,6 @@
     }
    ],
    "version": 1,
-   "status": "verified",
    "validRange": {
     "min": 260,
     "max": 10105,
@@ -22198,6 +22426,33 @@
      6793
     ]
    ],
+   "pageMap": [
+    {
+     "min": 260,
+     "max": 310,
+     "page": 13
+    },
+    {
+     "min": 320,
+     "max": 2430,
+     "page": 11
+    },
+    {
+     "min": 2440,
+     "max": 4550,
+     "page": 9
+    },
+    {
+     "min": 4560,
+     "max": 6670,
+     "page": 7
+    },
+    {
+     "min": 6680,
+     "max": 10105,
+     "page": 5
+    }
+   ],
    "fractionalBands": [
     {
      "from": 8633,
@@ -22213,7 +22468,9 @@
       572,
       643.5
      ],
-     "uncertainParts": []
+     "pages": [
+      4
+     ]
     },
     {
      "from": 7113,
@@ -22229,7 +22486,9 @@
       572.5,
       644
      ],
-     "uncertainParts": []
+     "pages": [
+      4
+     ]
     },
     {
      "from": 5589,
@@ -22245,7 +22504,10 @@
       572.8,
       644.4
      ],
-     "uncertainParts": []
+     "pages": [
+      6,
+      8
+     ]
     },
     {
      "from": 4066,
@@ -22261,7 +22523,10 @@
       573.1,
       644.7
      ],
-     "uncertainParts": []
+     "pages": [
+      6,
+      8
+     ]
     },
     {
      "from": 2548,
@@ -22277,7 +22542,10 @@
       572.8,
       644.4
      ],
-     "uncertainParts": []
+     "pages": [
+      6,
+      8
+     ]
     },
     {
      "from": 1024,
@@ -22293,24 +22561,16 @@
       573.4,
       645.1
      ],
-     "uncertainParts": []
+     "pages": [
+      10,
+      12
+     ]
     }
    ],
-   "reviewSegments": [],
+   "sourceMarks": [],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
-   },
-   "checks": {
-    "capacityCheck": {
-     "tableEndpoint": [
-      260,
-      674786
-     ],
-     "certificateMaxFillL": 674786,
-     "matches": true
-    }
    }
   },
   {
@@ -22376,26 +22636,18 @@
     "wording": "KERNEL DENSITY: 0.66 kg/l (typed cover, PDF page 1; handwritten again on PDF page 2)",
     "flagged": false
    },
-   "reviewSegments": [
-    {
-     "from": 9894,
-     "to": 8610,
-     "level": "info",
-     "reason": "Main table rows from 9,890 to 8,610 mm rise about 44.1 L/mm, while the course 1 proportional parts and course summary (PDF pages 4, 5, 11) give 71.3 L/mm. The figures are used exactly as printed in the PDF."
-    }
-   ],
    "flags": [
     {
      "level": "info",
-     "text": "Course 1 between 9,890 and 8,610 mm: main table and proportional parts differ (see note). Printed values are used."
+     "text": "Main table rows from 9,890 to 8,610 mm rise about 44.1 L/mm, while the course 1 proportional parts and the course summary (PDF pages 4, 5, 11) give 71.3 L/mm. Both are printed this way in the PDF and are used as printed."
     },
     {
-     "level": "warn",
+     "level": "info",
      "text": "Course summary (PDF page 4) gives a total of 745,748 L at 216 mm, but the main table ends at 230 mm with 709,558 L (= maximum filling volume). The summary is not used for lookups."
     },
     {
      "level": "info",
-     "text": "Proportional parts page for course 6 (PDF page 15) is damaged: the 2 mm value prints as \"14_.7\" and was read as 142.7. It is used as 142.7."
+     "text": "Proportional parts page for course 6 (PDF page 15) is damaged: the 2 mm value prints as \"14_.7\" with one digit hidden. It is not guessed; readings that need it are held until the value is entered from the PDF."
     },
     {
      "level": "info",
@@ -22403,7 +22655,6 @@
     }
    ],
    "version": 1,
-   "status": "verified",
    "validRange": {
     "min": 230,
     "max": 10194,
@@ -26404,6 +26655,33 @@
      38999
     ]
    ],
+   "pageMap": [
+    {
+     "min": 230,
+     "max": 1720,
+     "page": 10
+    },
+    {
+     "min": 1730,
+     "max": 3840,
+     "page": 9
+    },
+    {
+     "min": 3850,
+     "max": 5960,
+     "page": 8
+    },
+    {
+     "min": 5970,
+     "max": 8080,
+     "page": 7
+    },
+    {
+     "min": 8090,
+     "max": 10194,
+     "page": 6
+    }
+   ],
    "fractionalBands": [
     {
      "from": 9894,
@@ -26419,7 +26697,9 @@
       570.5,
       641.9
      ],
-     "uncertainParts": []
+     "pages": [
+      11
+     ]
     },
     {
      "from": 8219,
@@ -26435,7 +26715,10 @@
       570.7,
       642
      ],
-     "uncertainParts": []
+     "pages": [
+      11,
+      12
+     ]
     },
     {
      "from": 6544,
@@ -26451,7 +26734,10 @@
       570.8,
       642.1
      ],
-     "uncertainParts": []
+     "pages": [
+      12,
+      13
+     ]
     },
     {
      "from": 4869,
@@ -26467,7 +26753,10 @@
       570.8,
       642.1
      ],
-     "uncertainParts": []
+     "pages": [
+      13,
+      14
+     ]
     },
     {
      "from": 3194,
@@ -26483,14 +26772,17 @@
       570.9,
       642.3
      ],
-     "uncertainParts": []
+     "pages": [
+      14,
+      15
+     ]
     },
     {
      "from": 1510,
      "to": 215,
      "parts": [
       71.3,
-      142.7,
+      null,
       214.1,
       285.4,
       356.8,
@@ -26499,23 +26791,26 @@
       570.9,
       642.3
      ],
-     "uncertainParts": []
+     "pages": [
+      15
+     ]
+    }
+   ],
+   "sourceMarks": [
+    {
+     "kind": "part",
+     "from": 1510,
+     "to": 215,
+     "part": 2,
+     "pages": [
+      15
+     ],
+     "printed": "14_.7"
     }
    ],
    "rules": {
     "fractionalMethod": "add_parts_from_higher_ullage_row",
-    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
-   },
-   "checks": {
-    "capacityCheck": {
-     "tableEndpoint": [
-      230,
-      709558
-     ],
-     "certificateMaxFillL": 709558,
-     "matches": true
-    }
    }
   },
   {
@@ -26570,11 +26865,11 @@
    "rowStepMm": 2,
    "flags": [
     {
-     "level": "warn",
+     "level": "info",
      "text": "Cover page (PDF page 1) is torn; the report number is partly missing there but is printed in full on PDF page 2."
     },
     {
-     "level": "warn",
+     "level": "info",
      "text": "Report number SCHUTTER/CAL/0306/2013 is the same number printed on the PK Bunker No. 1 report."
     },
     {
@@ -26583,7 +26878,6 @@
     }
    ],
    "version": 1,
-   "status": "verified",
    "validRange": {
     "min": 0,
     "max": 3176,
@@ -32948,22 +33242,68 @@
      48768
     ]
    ],
+   "pageMap": [
+    {
+     "min": 0,
+     "max": 298,
+     "page": 3
+    },
+    {
+     "min": 300,
+     "max": 598,
+     "page": 4
+    },
+    {
+     "min": 600,
+     "max": 898,
+     "page": 5
+    },
+    {
+     "min": 900,
+     "max": 1198,
+     "page": 6
+    },
+    {
+     "min": 1200,
+     "max": 1498,
+     "page": 7
+    },
+    {
+     "min": 1500,
+     "max": 1798,
+     "page": 8
+    },
+    {
+     "min": 1800,
+     "max": 2098,
+     "page": 9
+    },
+    {
+     "min": 2100,
+     "max": 2398,
+     "page": 10
+    },
+    {
+     "min": 2400,
+     "max": 2698,
+     "page": 11
+    },
+    {
+     "min": 2700,
+     "max": 2998,
+     "page": 12
+    },
+    {
+     "min": 3000,
+     "max": 3176,
+     "page": 13
+    }
+   ],
    "fractionalBands": [],
-   "reviewSegments": [],
+   "sourceMarks": [],
    "rules": {
     "fractionalMethod": "none",
-    "linearInterpolationApproved": true,
     "subMillimetre": "linear_within_parts"
-   },
-   "checks": {
-    "capacityCheck": {
-     "tableEndpoint": [
-      3176,
-      48768
-     ],
-     "certificateMaxFillL": 48768,
-     "matches": true
-    }
    }
   }
  ],
