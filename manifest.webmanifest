@@ -4,8 +4,8 @@
   "description": "Stock take and audit for MJM (Palm Oil Mill) Sdn Bhd",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1d5a3c",
+  "background_color": "#F5F7F3",
+  "theme_color": "#1C5745",
   "icons": [
     {
       "src": "./icon-192.png",
