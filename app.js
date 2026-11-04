@@ -1032,6 +1032,12 @@
       });
     }
   }
+  // The calibration PDFs print ullage and dip as metres and millimetres (M MM): "15 092" = 15 m 092 mm.
+  // Values are stored and calculated in mm; these only change how they are shown and entered.
+  const mParts = (h) => { const neg = h < 0, a = Math.abs(h), m = Math.floor(a / 1000), r = a - m * 1000; return [`${neg ? '−' : ''}${m}`, (Number.isInteger(r) ? String(r) : String(Math.round(r * 1000) / 1000)).padStart(3, '0')]; };
+  const fmtMMM = (h) => { if (!isNum(h)) return '–'; const [m, mm] = mParts(h); return `${m} m ${mm} mm`; };
+  // Metres + millimetres boxes -> mm. Returns null when not valid.
+  const readMMM = (m, mm) => { const a = String(m).trim(), b = String(mm).trim(); if (a === '' && b === '') return null; const M = a === '' ? 0 : Number(a), MM = b === '' ? 0 : Number(b); if (!Number.isFinite(M) || !Number.isFinite(MM) || M < 0 || MM < 0 || MM >= 1000 || !Number.isInteger(M)) return null; return M * 1000 + MM; };
   const STATUS_HELP = {
     ready: 'All entries were extracted and passed the import checks. The table is used for calculations.',
     needs_attention: 'Some entries could not be read or did not pass the import checks. Readings that need them are held; every other reading is calculated normally.',
@@ -1041,8 +1047,8 @@
     const todo = d.units.flatMap((u) => (u.active && u.active.importCheck ? u.active.importCheck.items.filter((i) => i.level === 'attention').map((i) => ({ u, i })) : []));
     app.innerHTML = `${head}<div class="notice info"><span>A table is available for calculations as soon as it is imported. Entries that cannot be read are never guessed; only readings that need them are held.</span></div>
       ${todo.length ? `<div class="notice warn"><strong>Entries to correct from the PDF (${todo.length})</strong><ul class="issues">${todo.map(({ u, i }) => `<li><a href="#/settings/table/${u.active.id}">${esc(u.name)}</a>: ${esc(i.text)}</li>`).join('')}</ul></div>` : ''}
-      <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Product</th><th>Active version</th><th>Status</th><th>Basis</th><th>Range (mm)</th><th>Report reference</th><th>Calibrated</th><th>Source PDF</th></tr></thead><tbody>
-      ${d.units.map((u) => { const t = u.active; return `<tr class="clickable" data-href="#/settings/unit/${u.code}"><td><b>${esc(u.name)}</b></td><td><span class="product-tag ${u.product}">${esc(P()[u.product].short)}</span></td><td>v${t.version}</td><td>${statusPill(t.status)}${t.importCheck && t.importCheck.attention ? ` <span class="small muted">${t.importCheck.attention} to correct</span>` : ''}</td><td>${t.basis === 'dip' ? 'Dip depth' : 'Ullage'}</td><td class="n">${n0(t.validRange.min)}–${n0(t.validRange.max)}</td><td>${esc(t.reportReference)}</td><td>${fmtDate(t.calibrationDate)}</td><td class="small">${esc(t.sourceOriginalName || t.sourceFile)}</td></tr>`; }).join('')}
+      <div class="table-wrap"><table><thead><tr><th>Storage unit</th><th>Product</th><th>Active version</th><th>Status</th><th>Basis</th><th>Range (M MM)</th><th>Report reference</th><th>Calibrated</th><th>Source PDF</th></tr></thead><tbody>
+      ${d.units.map((u) => { const t = u.active; return `<tr class="clickable" data-href="#/settings/unit/${u.code}"><td><b>${esc(u.name)}</b></td><td><span class="product-tag ${u.product}">${esc(P()[u.product].short)}</span></td><td>v${t.version}</td><td>${statusPill(t.status)}${t.importCheck && t.importCheck.attention ? ` <span class="small muted">${t.importCheck.attention} to correct</span>` : ''}</td><td>${t.basis === 'dip' ? 'Dip depth' : 'Ullage'}</td><td class="n">${fmtMMM(t.validRange.min)} – ${fmtMMM(t.validRange.max)}</td><td>${esc(t.reportReference)}</td><td>${fmtDate(t.calibrationDate)}</td><td class="small">${esc(t.sourceOriginalName || t.sourceFile)}</td></tr>`; }).join('')}
       </tbody></table></div>`;
     bindRowLinks();
   }
@@ -1095,9 +1101,9 @@
         <section class="panel"><h3>Calibration details</h3><dl class="kv">
           <dt>Storage unit</dt><dd>${esc(t.unitName)} (${esc(t.unitCode)})</dd>
           <dt>Measurement basis</dt><dd>${t.basis === 'dip' ? 'Dip depth (DIP)' : 'Ullage'}</dd>
-          <dt>Measurement units</dt><dd>${esc(t.measurementUnit)}</dd><dt>Volume units</dt><dd>${esc(t.volumeUnit === 'L' ? 'litres' : t.volumeUnit)}</dd>
+          <dt>Measurement units</dt><dd>${t.measurementUnit === 'mm' ? `Metres and millimetres (M MM), as printed in the PDF <span class="small muted">(calculated in mm)</span>` : esc(t.measurementUnit)}</dd><dt>Volume units</dt><dd>${esc(t.volumeUnit === 'L' ? 'litres' : t.volumeUnit)}</dd>
           <dt>Reference height</dt><dd>${n0(t.referenceHeightMm)} mm</dd>
-          <dt>Valid range</dt><dd>${n0(t.validRange.min)} to ${n0(t.validRange.max)} mm (${n0(t.rowCount || rows.length)} rows)</dd>
+          <dt>Valid range</dt><dd>${fmtMMM(t.validRange.min)} to ${fmtMMM(t.validRange.max)} <span class="small muted">(${n0(t.validRange.min)}–${n0(t.validRange.max)} mm, ${n0(t.rowCount || rows.length)} rows)</span></dd>
           <dt>Calibration date</dt><dd>${fmtDate(t.calibrationDate)}</dd>
           <dt>Report reference</dt><dd>${esc(t.reportReference)}${t.jobCode ? ` (job ${esc(t.jobCode)})` : ''}</dd>
           ${t.reportIssueDate ? `<dt>Report issued</dt><dd>${fmtDate(t.reportIssueDate)}</dd>` : ''}
@@ -1115,11 +1121,12 @@
         </section>
       </div>
       ${t.flags.length || notes.length ? `<section class="panel"><h3>Notes on the source document</h3><ul class="issues">${notes.map((i) => `<li><span class="pill neutral">${n0(i.from)}–${n0(i.to)} mm</span> ${esc(i.text)}</li>`).join('')}${t.flags.map((f) => `<li><span class="pill neutral">Note</span> ${esc(f.text)}</li>`).join('')}</ul></section>` : ''}
-      <section class="panel"><h3>Try a lookup</h3><div class="row"><label class="field" style="max-width:260px"><span>${t.basis === 'dip' ? 'Dip' : 'Ullage'} (mm)</span><input type="text" inputmode="decimal" id="lkMm"></label><button id="lkBtn" style="align-self:flex-end">Look up</button></div><div id="lkOut"></div></section>
-      ${(t.fractionalBands || []).length ? `<section class="panel"><h3>Fractional / proportional parts (litres)</h3><div class="table-wrap"><table><thead><tr><th>From (mm)</th><th>To (mm)</th>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `<th class="n">${k} mm</th>`).join('')}<th>PDF page</th></tr></thead><tbody>${t.fractionalBands.map((b) => `<tr><td>${n0(b.from)}</td><td>${n0(b.to)}</td>${b.parts.map((x, i) => { const key = `${b.from}|${b.to}|${i + 1}`; const m = marks.get(`p${key}`); const h = heldParts.get(key); return `<td class="n${h ? ' cell-flag' : ''}"${h ? ` title="${esc(h.text)}"` : ''}>${x === null ? `<span class="pill bad">${m && m.printed ? `“${esc(m.printed)}” unreadable` : 'unreadable'}</span>` : x}</td>`; }).join('')}<td>${(b.pages || []).map((pg) => `<button type="button" class="btn-link" data-pdfpage="${pg}">${pg}</button>`).join(' ') || '–'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
-      <section class="panel"><div class="panel-head"><h3>Main table rows</h3><span class="spacer"></span><label class="field" style="flex-direction:row;align-items:center"><span class="small">Jump to mm</span><input type="text" inputmode="numeric" id="jump" style="width:120px;min-height:40px"></label></div>
-        <div class="table-wrap"><table><thead><tr><th class="n">${t.basis === 'dip' ? 'Dip' : 'Ullage'} (mm)</th><th class="n">Volume (L)</th><th class="n">Change from previous row (L)</th><th>PDF page</th></tr></thead><tbody>
-        ${rows.slice(page * PER, page * PER + PER).map(([h, v], i) => { const k = page * PER + i; const prev = k > 0 ? rows[k - 1][1] : null; const held = heldRows.get(h); const m = marks.get(`r${h}`); const pg = pageOfRow(t, h); return `<tr${held ? ` class="row-flag" title="${esc(held.text)}"` : ''}><td class="n">${n0(h)}</td><td class="n">${v === null ? `<span class="pill bad">${m && m.printed ? `“${esc(m.printed)}” unreadable` : 'unreadable'}</span>` : n0(v)}${held && v !== null ? ' <span class="pill warn">check</span>' : ''}</td><td class="n muted">${prev !== null && v !== null ? n0(v - prev) : ''}</td><td>${pg ? `<button type="button" class="btn-link" data-pdfpage="${pg}">${pg}</button>` : ''}</td></tr>`; }).join('')}
+      <section class="panel"><h3>Try a lookup</h3><p class="help">Enter the ${t.basis === 'dip' ? 'dip' : 'ullage'} as in the table: metres and millimetres.</p>
+        <div class="row" style="align-items:flex-end"><label class="field" style="width:120px"><span>${t.basis === 'dip' ? 'Dip' : 'Ullage'} M</span><input type="text" inputmode="numeric" id="lkM" placeholder="14"></label><label class="field" style="width:140px"><span>MM</span><input type="text" inputmode="decimal" id="lkMm" placeholder="650"></label><button id="lkBtn">Look up</button></div><div id="lkOut"></div></section>
+      ${(t.fractionalBands || []).length ? `<section class="panel"><h3>Fractional / proportional parts (litres)</h3><div class="table-wrap"><table><thead><tr><th>From (mm)</th><th>To (mm)</th>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => `<th class="n">${k} mm</th>`).join('')}<th>PDF page</th></tr></thead><tbody>${t.fractionalBands.map((b) => `<tr><td>${n0(b.from)}</td><td>${n0(b.to)}</td>${b.parts.map((x, i) => { const key = `${b.from}|${b.to}|${i + 1}`; const m = marks.get(`p${key}`); const h = heldParts.get(key); return `<td class="n${h ? ' cell-flag' : ''}"${h ? ` title="${esc(h.text)}"` : ''}>${x === null ? `<span class="pill bad">${m && m.printed ? `“${esc(m.printed)}” unreadable` : 'unreadable'}</span>` : x.toLocaleString('en-MY', { minimumFractionDigits: 1, maximumFractionDigits: 3 })}</td>`; }).join('')}<td>${(b.pages || []).map((pg) => `<button type="button" class="btn-link" data-pdfpage="${pg}">${pg}</button>`).join(' ') || '–'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+      <section class="panel"><div class="panel-head"><h3>Main table rows</h3><span class="spacer"></span><div class="row" style="gap:8px"><span class="small">Jump to</span><input type="text" inputmode="numeric" id="jumpM" aria-label="Jump to metres" placeholder="M" style="width:72px"><input type="text" inputmode="numeric" id="jumpMm" aria-label="Jump to millimetres" placeholder="MM" style="width:88px"><button type="button" class="btn-sm" id="jumpBtn">Go</button></div></div>
+        <div class="table-wrap"><table><thead><tr><th class="n" colspan="2" style="text-align:center">${t.basis === 'dip' ? 'Dip' : 'Ullage'}</th><th class="n" rowspan="2">Volume (L)</th><th class="n" rowspan="2">Change from previous row (L)</th><th rowspan="2">PDF page</th></tr><tr><th class="n">M</th><th class="n">MM</th></tr></thead><tbody>
+        ${rows.slice(page * PER, page * PER + PER).map(([h, v], i) => { const k = page * PER + i; const prev = k > 0 ? rows[k - 1][1] : null; const held = heldRows.get(h); const m = marks.get(`r${h}`); const pg = pageOfRow(t, h); const [hm, hmm] = mParts(h); return `<tr${held ? ` class="row-flag" title="${esc(held.text)}"` : ''}><td class="n">${hm}</td><td class="n">${hmm}</td><td class="n">${v === null ? `<span class="pill bad">${m && m.printed ? `“${esc(m.printed)}” unreadable` : 'unreadable'}</span>` : n0(v)}${held && v !== null ? ' <span class="pill warn">check</span>' : ''}</td><td class="n muted">${prev !== null && v !== null ? n0(v - prev) : ''}</td><td>${pg ? `<button type="button" class="btn-link" data-pdfpage="${pg}">${pg}</button>` : ''}</td></tr>`; }).join('')}
         </tbody></table></div>
         <div class="row"><button id="pgPrev" ${page === 0 ? 'disabled' : ''}>Previous rows</button><span class="muted">Rows ${page * PER + 1}–${Math.min(rows.length, page * PER + PER)} of ${rows.length}</span><button id="pgNext" ${page >= pages - 1 ? 'disabled' : ''}>Next rows</button></div></section>
       <section class="panel"><h3>Version history</h3><p class="small muted">Each import or correction is a new version. Finalised audits keep the version (and PDF) they used.</p><div class="table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Active</th><th>Source PDF</th><th>Created</th><th>Note</th></tr></thead><tbody>
@@ -1160,16 +1167,19 @@
     $('#tblCsvBtn').onclick = () => downloadApi(`/api/calibration/${t.id}/export.csv`);
     $('#pgPrev').onclick = () => { S.rowsPage[t.id] = page - 1; renderTableDetail(head, null, t.id); };
     $('#pgNext').onclick = () => { S.rowsPage[t.id] = page + 1; renderTableDetail(head, null, t.id); };
-    $('#jump').addEventListener('change', (e) => { const x = Number(e.target.value); if (!Number.isFinite(x)) return; const idx = rows.findIndex((r) => r[0] >= x); S.rowsPage[t.id] = Math.max(0, Math.floor((idx < 0 ? rows.length - 1 : idx) / PER)); renderTableDetail(head, null, t.id); });
+    const doJump = () => { const x = readMMM($('#jumpM').value, $('#jumpMm').value); if (x === null) return toast('Enter metres, and millimetres from 0 to 999.', true); const idx = rows.findIndex((r) => r[0] >= x); S.rowsPage[t.id] = Math.max(0, Math.floor((idx < 0 ? rows.length - 1 : idx) / PER)); renderTableDetail(head, null, t.id); };
+    $('#jumpBtn').onclick = doJump;
+    ['#jumpM', '#jumpMm'].forEach((sel) => $(sel).addEventListener('keydown', (e) => { if (e.key === 'Enter') doJump(); }));
     const doLookup = async () => {
-      const mm = $('#lkMm').value.trim();
+      const mm = readMMM($('#lkM').value, $('#lkMm').value);
+      if (mm === null) { $('#lkOut').innerHTML = '<div class="notice warn">Enter metres (a whole number) and millimetres from 0 to 999.</div>'; return; }
       try {
         const r = await api('GET', `/api/calibration/${t.id}/lookup?mm=${encodeURIComponent(mm)}`);
-        $('#lkOut').innerHTML = r.ok ? `<div class="calc-box"><div class="line"><span>Volume</span><b>${n2(r.volume)} L</b></div>${r.steps.map((s) => `<div class="small">${esc(s)}</div>`).join('')}</div>${r.issues.map((i) => `<div class="notice ${i.level === 'block' ? 'bad' : i.level === 'warn' ? 'warn' : 'info'}">${esc(i.text)}</div>`).join('')}` : r.issues.map((i) => `<div class="notice bad">${esc(i.text)}</div>`).join('');
+        $('#lkOut').innerHTML = r.ok ? `<div class="calc-box"><div class="line"><span>${t.basis === 'dip' ? 'Dip' : 'Ullage'}</span><b>${fmtMMM(mm)} <span class="muted">(${n2(mm)} mm)</span></b></div><div class="line"><span>Volume</span><b>${n2(r.volume)} L</b></div>${r.steps.map((s) => `<div class="small">${esc(s)}</div>`).join('')}</div>${r.issues.map((i) => `<div class="notice ${i.level === 'block' ? 'bad' : i.level === 'warn' ? 'warn' : 'info'}">${esc(i.text)}</div>`).join('')}` : r.issues.map((i) => `<div class="notice bad">${esc(i.text)}</div>`).join('');
       } catch (e) { fail(e); }
     };
     $('#lkBtn').onclick = doLookup;
-    $('#lkMm').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); });
+    ['#lkM', '#lkMm'].forEach((sel) => $(sel).addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); }));
     const ab = $('#activateBtn');
     if (ab) ab.onclick = async () => { try { await api('POST', `/api/calibration/${t.id}/activate`); toast('Version is now active.'); renderTableDetail(head, null, t.id); } catch (e) { fail(e); } };
   }
