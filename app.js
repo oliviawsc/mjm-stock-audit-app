@@ -477,7 +477,7 @@
     if (!S.results) scheduleCompute(0);
   }
   function goStep(n, focus) {
-    if (n > 1 && S.step === 1 && !S.draft.inputs.products.length) { toast('Choose one or more: CPO, Palm Kernel or Diesel.', true); return; }
+    if (n > 1 && S.step === 1 && !S.draft.inputs.products.length) { toast('Choose what you are checking: CPO, Palm Kernel or Diesel.', true); return; }
     S.step = Math.min(3, Math.max(1, n));
     S.focus = focus || null;
     if (S.draft.id) { S.skipRoute = true; location.hash = `#/audit/${S.draft.id}/edit/${S.step}`; }
@@ -548,8 +548,9 @@
 
   // Step 1: what is being checked, and when
   function step1(inp) {
-    return `<section class="card"><div><h2>What are you checking?</h2><p class="help">Choose one or more.</p></div>
-      <div class="choice-grid">${Object.values(P()).map((p) => `<label class="choice ${p.code}"><input type="checkbox" data-product="${p.code}" ${inp.products.includes(p.code) ? 'checked' : ''}><span class="bar" aria-hidden="true"></span><span class="tick" aria-hidden="true">✓</span><span class="choice-title">${esc(PRODUCT_CARD[p.code][0])}</span><span class="choice-sub">${esc(PRODUCT_CARD[p.code][1])}</span></label>`).join('')}</div></section>
+    return `<section class="card"><div><h2>What are you checking?</h2><p class="help">Choose one. Do a separate stock take for each product.</p></div>
+      ${inp.products.length > 1 ? `<div class="notice warn">This draft was started with more than one product (${inp.products.map((p) => esc(PRODUCT_CARD[p][0])).join(', ')}). Choose the one to keep.</div>` : ''}
+      <div class="choice-grid">${Object.values(P()).map((p) => `<label class="choice ${p.code}"><input type="radio" name="product" data-product="${p.code}" ${inp.products.length === 1 && inp.products[0] === p.code ? 'checked' : ''}><span class="bar" aria-hidden="true"></span><span class="tick" aria-hidden="true">✓</span><span class="choice-title">${esc(PRODUCT_CARD[p.code][0])}</span><span class="choice-sub">${esc(PRODUCT_CARD[p.code][1])}</span></label>`).join('')}</div></section>
       <section class="card">
         <div class="grid-2">${dtField('Stock take date', 'auditDate', { dateOnly: true })}${textField('Prepared by', 'preparedBy', { autocomplete: 'name' })}</div>
         ${dtField('Compare stock as at', 'cutoff', { help: 'Use the date and time shown on your book stock record. Example: 6:00 a.m.', noNow: true })}
@@ -757,10 +758,13 @@
     body.addEventListener('change', (e) => {
       const t = e.target;
       if (t.dataset.product) {
-        const ps = new Set(S.draft.inputs.products);
-        t.checked ? ps.add(t.dataset.product) : ps.delete(t.dataset.product);
-        S.draft.inputs.products = Object.keys(P()).filter((p) => ps.has(p));
-        markDirty(); scheduleCompute(0);
+        // One product per stock take. Movements entered for another product are removed (after asking).
+        const inp = S.draft.inputs, keep = t.dataset.product;
+        const other = (inp.movements || []).filter((m) => m.product && m.product !== keep);
+        if (other.length && !confirm(`Switch to ${PRODUCT_CARD[keep][0]}? The ${other.length} movement(s) entered for ${[...new Set(other.map((m) => PRODUCT_CARD[m.product] ? PRODUCT_CARD[m.product][0] : m.product))].join(', ')} will be removed.`)) { renderStep(); return; }
+        inp.products = [keep];
+        if (other.length) inp.movements = inp.movements.filter((m) => !m.product || m.product === keep);
+        markDirty(); renderStep(); scheduleCompute(0);
       } else if (t.dataset.status) {
         setPath(S.draft.inputs, `units.${t.dataset.status}.status`, t.value);
         markDirty(); renderStep(); scheduleCompute(0);
