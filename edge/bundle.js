@@ -1019,7 +1019,7 @@ function pdf(v, sink, PDFDocumentClass) {
   doc.moveDown(0.3);
   kv([
     ['Audit reference', `${v.reference}${v.revision ? ` (revision ${v.revision})` : ''}`],
-    ['Audit date', fmtDate(inp.auditDate)],
+    ['Stock take date and time', `${fmtDate(inp.auditDate)}${inp.auditTime ? ` ${inp.auditTime}` : ''}`],
     ['Stock cut-off', `${fmtDateTime(inp.cutoff)} (Asia/Kuching)`],
     ['Auditor / prepared by', inp.preparedBy],
     ['Products included', (inp.products || []).map((x) => PRODUCTS[x]?.name || x).join(', ')],
@@ -1162,7 +1162,7 @@ function csv(v) {
   L.push(line(['Report', `${APP_NAME} - detailed data`]));
   L.push(line(['Audit reference', v.reference, 'Revision', v.revision]));
   L.push(line(['Status', statusLine(v)]));
-  L.push(line(['Audit date', fmtDate(inp.auditDate), 'Cut-off', fmtDateTime(inp.cutoff), 'Prepared by', inp.preparedBy]));
+  L.push(line(['Stock take date', fmtDate(inp.auditDate), 'Stock take time', inp.auditTime || '', 'Cut-off', fmtDateTime(inp.cutoff), 'Prepared by', inp.preparedBy]));
   L.push(line(['Remarks', inp.remarks || '']));
   L.push('');
   L.push(line(['PRODUCT RESULTS']));
@@ -1454,7 +1454,7 @@ function createRoutes({ db, sha256, usersTable = 'users', backupUsers = true }) 
         const snap = a.status !== 'draft' ? J(a.snapshot) : null;
         const summary = {};
         if (snap) for (const [p, pr] of Object.entries(snap.results.products)) summary[p] = { adjustedTotal: pr.adjustedTotal, variance: pr.comparison.variance, variancePct: pr.comparison.variancePct, partial: pr.partial, unit: pr.unit, limit: pr.limitStatus.label };
-        return { id: a.id, reference: a.reference, revision: a.revision, isDemo: !!a.is_demo, status: a.status, auditDate: a.audit_date, cutoff: inputs.cutoff, products: (a.products || '').split(',').filter(Boolean), preparedBy: inputs.preparedBy, updatedAt: a.updated_at, finalisedAt: a.finalised_at, summary };
+        return { id: a.id, reference: a.reference, revision: a.revision, isDemo: !!a.is_demo, status: a.status, auditDate: a.audit_date, auditTime: inputs.auditTime || '', cutoff: inputs.cutoff, products: (a.products || '').split(',').filter(Boolean), preparedBy: inputs.preparedBy, updatedAt: a.updated_at, finalisedAt: a.finalised_at, summary };
       }),
     };
   });

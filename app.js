@@ -324,11 +324,11 @@
       const ref = (a) => `<b>${esc(a.reference)}</b>${a.revision ? ` rev ${a.revision}` : ''} ${a.isDemo ? '<span class="pill info">Demo</span>' : ''}`;
       const st = (a) => `<span class="pill ${AUDIT_STATUS[a.status][1]}">${AUDIT_STATUS[a.status][0]}</span>`;
       $('#histResults').innerHTML = rows.length ? `<div class="table-wrap hist-table"><table><thead><tr><th>Reference</th><th>Status</th><th>Stock take date</th><th>Compared as at</th><th>Prepared by</th><th>Stock</th><th>Results (finalised)</th><th></th></tr></thead><tbody>
-        ${rows.map((a) => `<tr class="clickable" data-href="#/audit/${a.id}"><td>${ref(a)}</td><td>${st(a)}</td><td>${fmtDate(a.auditDate)}</td><td>${fmtDT(a.cutoff)}</td><td>${esc(a.preparedBy || '')}</td><td>${tags(a)}</td>
+        ${rows.map((a) => `<tr class="clickable" data-href="#/audit/${a.id}"><td>${ref(a)}</td><td>${st(a)}</td><td>${fmtDate(a.auditDate)}${a.auditTime ? ` ${esc(a.auditTime)}` : ''}</td><td>${fmtDT(a.cutoff)}</td><td>${esc(a.preparedBy || '')}</td><td>${tags(a)}</td>
           <td class="small">${summary(a) || '<span class="muted">–</span>'}</td><td>${action(a)}</td></tr>`).join('')}
         </tbody></table></div>
         <div class="hist-cards">${rows.map((a) => `<article class="hist-card"><div class="hc-top">${ref(a)} ${st(a)}</div>
-          <div class="row small">${tags(a)}<span>Stock take ${fmtDate(a.auditDate) || '–'}</span><span class="muted">Compared as at ${fmtDT(a.cutoff) || '–'}</span></div>
+          <div class="row small">${tags(a)}<span>Stock take ${fmtDate(a.auditDate) || '–'}${a.auditTime ? ` ${esc(a.auditTime)}` : ''}</span><span class="muted">Compared as at ${fmtDT(a.cutoff) || '–'}</span></div>
           ${a.preparedBy ? `<div class="small muted">Prepared by ${esc(a.preparedBy)}</div>` : ''}
           ${summary(a) ? `<div class="small">${summary(a)}</div>` : ''}
           ${action(a)}</article>`).join('')}</div>
@@ -364,7 +364,7 @@
       ${a.revisionReason ? `<div class="notice info"><strong>Reason for revision ${a.revision}:</strong> ${esc(a.revisionReason)}</div>` : ''}
       <section class="panel"><h2>Audit details</h2><dl class="kv">
         <dt>Audit reference</dt><dd>${esc(a.reference)}${a.revision ? ` (revision ${a.revision})` : ''}</dd>
-        <dt>Stock take date</dt><dd>${fmtDate(inp.auditDate)}</dd>
+        <dt>Stock take date and time</dt><dd>${fmtDate(inp.auditDate)}${inp.auditTime ? ` ${esc(inp.auditTime)}` : ''}</dd>
         <dt>Stock compared as at (cut-off)</dt><dd>${fmtDT(inp.cutoff)} (Asia/Kuching)</dd>
         <dt>Auditor / prepared by</dt><dd>${esc(inp.preparedBy)}</dd>
         <dt>Products included</dt><dd>${(inp.products || []).map((p) => esc(P()[p].name)).join(', ')}</dd>
@@ -412,7 +412,7 @@
   const unitWord = (p) => (P()[p].unit === 'L' ? 'litres' : P()[p].unit);
   const cap = (t) => t[0].toUpperCase() + t.slice(1);
   function blankInputs() {
-    return { auditDate: S.meta.now.slice(0, 10), cutoff: '', preparedBy: S.user.displayName, products: [], remarks: '', units: {}, movements: [], book: { CPO: {}, PK: {}, DSL: {} }, signoff: {} };
+    return { auditDate: nowKuchingClient().slice(0, 10), auditTime: '', cutoff: '', preparedBy: S.user.displayName, products: [], remarks: '', units: {}, movements: [], book: { CPO: {}, PK: {}, DSL: {} }, signoff: {} };
   }
   function startNew() {
     if (!canEdit()) { app.innerHTML = '<div class="notice warn">Your role can view audits but cannot create them.</div>'; return; }
@@ -445,7 +445,7 @@
   function stepIssues(r) {
     const c = [0, 0, 0, 0];
     if (!r) return c;
-    for (const i of r.blockers) c[issueTarget(i).step]++;
+    for (const i of [...r.blockers, ...clientBlockers(S.draft.inputs)]) c[issueTarget(i).step]++;
     return c;
   }
   function renderWizard() {
@@ -476,8 +476,18 @@
     $('#saveBtn').onclick = () => saveDraft().catch(fail);
     if (!S.results) scheduleCompute(0);
   }
+  // Checks made in the app as well as the server's: the stock take time (not needed for the June demonstration).
+  function clientBlockers(inp) {
+    const out = [];
+    if (!S.draft.isDemo && !parseTime(inp.auditTime || '')) out.push({ level: 'block', code: 'audit_time', text: 'Enter the time of the stock take.', client: true });
+    return out;
+  }
+  function updateClientChecks() {
+    const el = $('#calc-step1'); if (el && S.results) updateCalc();
+  }
   function goStep(n, focus) {
     if (n > 1 && S.step === 1 && !S.draft.inputs.products.length) { toast('Choose what you are checking: CPO, Palm Kernel or Diesel.', true); return; }
+    if (n > 1 && S.step === 1 && clientBlockers(S.draft.inputs).length) { toast('Enter the time of the stock take.', true); const tm = $('[data-timepath] [data-part="time"]'); if (tm) { tm.classList.add('invalid'); tm.focus(); } return; }
     S.step = Math.min(3, Math.max(1, n));
     S.focus = focus || null;
     if (S.draft.id) { S.skipRoute = true; location.hash = `#/audit/${S.draft.id}/edit/${S.step}`; }
@@ -521,14 +531,22 @@
   function areaField(label, path, o = {}) {
     return `<label class="field"><span>${label}${o.hint ? ` <span class="hint">${o.hint}</span>` : ''}</span><textarea ${bindAttr(path)} ${o.rows ? `rows="${o.rows}"` : ''}>${esc(val(path))}</textarea></label>`;
   }
+  // Date (DD/MM/YYYY, typed or picked from the calendar) and optional 24-hour time.
+  // o.timePath keeps the time in its own field (stock take date and time); otherwise both go into `path`.
+  const CAL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>';
   function dtField(label, path, o = {}) {
     const v = val(path);
-    const raw = S.dtRaw[path] || { date: v ? fmtDate(v.slice(0, 10)) : '', time: v && v.length >= 16 ? v.slice(11, 16) : '' };
+    const t = o.timePath ? val(o.timePath) : (v && v.length >= 16 ? v.slice(11, 16) : '');
+    const raw = S.dtRaw[path] || { date: v ? fmtDate(v.slice(0, 10)) : '', time: t };
+    const iso = parseDate(raw.date) || '';
+    const withTime = !o.dateOnly || o.timePath;
     return `<div class="field"><span class="field-label">${label}${o.hint ? ` <span class="hint">${o.hint}</span>` : ''}</span>
       ${o.help ? `<span class="help">${o.help}</span>` : ''}
-      <div class="dt"><label class="field"><span class="hint">Date (DD/MM/YYYY)</span><input type="text" inputmode="numeric" data-dt="${esc(path)}" data-part="date" value="${esc(raw.date)}" placeholder="23/06/2026" class="${raw.date && !parseDate(raw.date) ? 'invalid' : ''}"></label>
-      ${o.dateOnly ? '' : `<label class="field"><span class="hint">Time (24-hour)</span><input type="text" inputmode="numeric" data-dt="${esc(path)}" data-part="time" value="${esc(raw.time)}" placeholder="06:00" class="${raw.time && !parseTime(raw.time) ? 'invalid' : ''}"></label>`}
-      ${o.noNow ? '' : `<button type="button" class="btn-sm" data-act="now" data-path="${esc(path)}" data-dateonly="${o.dateOnly ? 1 : ''}">${o.dateOnly ? 'Today' : 'Now'}</button>`}</div></div>`;
+      <div class="dt" ${o.timePath ? `data-timepath="${esc(o.timePath)}"` : ''}><label class="field"><span class="hint">Date (DD/MM/YYYY)</span>
+        <span class="date-wrap"><input type="text" inputmode="numeric" data-dt="${esc(path)}" data-part="date" value="${esc(raw.date)}" placeholder="23/06/2026" class="${raw.date && !parseDate(raw.date) ? 'invalid' : ''}">
+        <span class="cal">${CAL_ICON}<input type="date" class="cal-native" data-cal="${esc(path)}" value="${esc(iso)}" aria-label="Choose ${esc(String(label).toLowerCase())} from a calendar"></span></span></label>
+      ${withTime ? `<label class="field"><span class="hint">Time (24-hour)</span><input type="text" inputmode="numeric" data-dt="${esc(path)}" data-part="time" value="${esc(raw.time)}" placeholder="${o.timePlaceholder || '06:00'}" class="${raw.time && !parseTime(raw.time) ? 'invalid' : ''}"></label>` : ''}
+      ${o.noNow ? '' : `<button type="button" class="btn-sm" data-act="now" data-path="${esc(path)}" data-timepath="${esc(o.timePath || '')}" data-dateonly="${o.dateOnly && !o.timePath ? 1 : ''}">${withTime ? 'Now' : 'Today'}</button>`}</div></div>`;
   }
   const unitOpts = [['', 'Choose…'], ['mm', 'millimetres (mm)'], ['cm', 'centimetres (cm)'], ['m', 'metres (m)']];
 
@@ -552,7 +570,7 @@
       ${inp.products.length > 1 ? `<div class="notice warn">This draft was started with more than one product (${inp.products.map((p) => esc(PRODUCT_CARD[p][0])).join(', ')}). Choose the one to keep.</div>` : ''}
       <div class="choice-grid">${Object.values(P()).map((p) => `<label class="choice ${p.code}"><input type="radio" name="product" data-product="${p.code}" ${inp.products.length === 1 && inp.products[0] === p.code ? 'checked' : ''}><span class="bar" aria-hidden="true"></span><span class="tick" aria-hidden="true">✓</span><span class="choice-title">${esc(PRODUCT_CARD[p.code][0])}</span><span class="choice-sub">${esc(PRODUCT_CARD[p.code][1])}</span></label>`).join('')}</div></section>
       <section class="card">
-        <div class="grid-2">${dtField('Stock take date', 'auditDate', { dateOnly: true })}${textField('Prepared by', 'preparedBy', { autocomplete: 'name' })}</div>
+        <div class="grid-2">${dtField('Stock take date and time', 'auditDate', { dateOnly: true, timePath: 'auditTime', timeRequired: true, timePlaceholder: '08:00' })}${textField('Prepared by', 'preparedBy', { autocomplete: 'name' })}</div>
         ${dtField('Compare stock as at', 'cutoff', { help: 'Use the date and time shown on your book stock record. Example: 6:00 a.m.', noNow: true })}
         <details ${inp.remarks ? 'open' : ''}><summary>Add remarks (optional)</summary>${areaField('Remarks', 'remarks', { rows: 3 })}</details>
         <p class="small muted">All times are Malaysia time (Asia/Kuching).</p>
@@ -755,8 +773,15 @@
         if (t.dataset.rerender) { renderStep(); scheduleCompute(0); } else { liveUllage(t.dataset.bind); scheduleCompute(); }
       } else if (t.dataset.dt) onDt(t);
     });
+    body.addEventListener('click', (e) => { const c = e.target.closest('input[data-cal]'); if (c && c.showPicker) { try { c.showPicker(); } catch { /* the browser opens it itself */ } } });
     body.addEventListener('change', (e) => {
       const t = e.target;
+      if (t.dataset.cal !== undefined) {
+        const txt = $('[data-part="date"]', t.closest('.dt'));
+        txt.value = t.value ? fmtDate(t.value) : '';
+        onDt(txt);
+        return;
+      }
       if (t.dataset.product) {
         // One product per stock take. Movements entered for another product are removed (after asking).
         const inp = S.draft.inputs, keep = t.dataset.product;
@@ -797,9 +822,10 @@
       const inp = S.draft.inputs;
       const act = b.dataset.act;
       if (act === 'now') {
-        const path = b.dataset.path; const now = S.meta.now;
-        const v = b.dataset.dateonly ? now.slice(0, 10) : nowKuchingClient();
-        setPath(inp, path, v); delete S.dtRaw[path]; markDirty(); renderStep(); scheduleCompute(0);
+        const path = b.dataset.path, now = nowKuchingClient();
+        if (b.dataset.timepath) { setPath(inp, path, now.slice(0, 10)); setPath(inp, b.dataset.timepath, now.slice(11, 16)); }
+        else setPath(inp, path, b.dataset.dateonly ? now.slice(0, 10) : now);
+        delete S.dtRaw[path]; markDirty(); renderStep(); scheduleCompute(0);
       }
       if (act === 'add-point') { const pts = getPath(inp, `units.${b.dataset.unit}.points`) || []; pts.push({ label: '', ullage: '' }); setPath(inp, `units.${b.dataset.unit}.points`, pts); markDirty(); renderStep(); }
       if (act === 'del-point') { const pts = getPath(inp, `units.${b.dataset.unit}.points`); pts.splice(+b.dataset.i, 1); markDirty(); renderStep(); scheduleCompute(0); }
@@ -829,8 +855,9 @@
     const d = parseDate(raw.date), tm = tEl ? parseTime(raw.time) : '00:00';
     dEl.classList.toggle('invalid', !!raw.date && !d);
     if (tEl) tEl.classList.toggle('invalid', !!raw.time && !tm);
-    const v = tEl ? (d && tm ? `${d}T${tm}` : '') : (d || '');
-    setPath(S.draft.inputs, path, v);
+    const cal = $('[data-cal]', wrap); if (cal) cal.value = d || '';
+    if (wrap.dataset.timepath) { setPath(S.draft.inputs, path, d || ''); setPath(S.draft.inputs, wrap.dataset.timepath, tm || ''); updateClientChecks(); }
+    else setPath(S.draft.inputs, path, tEl ? (d && tm ? `${d}T${tm}` : '') : (d || ''));
     markDirty(); scheduleCompute();
   }
   function liveUllage(path) {
@@ -926,10 +953,11 @@
   }
   function reviewHtml(r) {
     const demo = S.draft.isDemo;
-    const blocks = r.allIssues.filter((i) => i.level === 'block');
+    const extra = clientBlockers(S.draft.inputs);
+    const blocks = [...extra, ...r.allIssues.filter((i) => i.level === 'block')];
     const warns = r.allIssues.filter((i) => i.level === 'warn');
     const item = (i) => { const t = issueTarget(i); return `<li><span>${esc(i.text)}${demo && i.gate ? ' <span class="pill neutral">not required for a demonstration</span>' : ''}</span> <button type="button" class="btn-link" data-goto='${esc(JSON.stringify(t))}'>${esc(gotoLabel(t))}</button></li>`; };
-    const ok = demo ? r.canFinaliseDemo : r.canFinalise;
+    const ok = (demo ? r.canFinaliseDemo : r.canFinalise) && !extra.length;
     return `${blocks.length ? `<div class="notice ${ok ? 'warn' : 'bad'}"><strong>${ok ? 'Not needed for a demonstration' : `To finish before finalising (${blocks.length})`}</strong><ul class="check-list">${blocks.map(item).join('')}</ul></div>` : '<div class="notice good"><strong>Everything needed is filled in. You can finalise.</strong></div>'}
       ${warns.length ? `<details ${blocks.length ? '' : 'open'}><summary>Warnings and notes (${warns.length})</summary><ul class="check-list">${warns.map(item).join('')}</ul></details>` : ''}`;
   }
@@ -939,7 +967,7 @@
     const counts = stepIssues(r);
     $$('.progress button').forEach((b) => { const n = +b.dataset.step; let pill = $('.pill', b); if (counts[n]) { if (!pill) { pill = document.createElement('span'); pill.className = 'pill bad'; pill.title = 'Items to complete'; b.appendChild(pill); } pill.textContent = counts[n]; } else if (pill) pill.remove(); });
     const step1 = $('#calc-step1');
-    if (step1) { const top = r.allIssues.filter((i) => issueTarget(i).step === 1 && i.level === 'block'); step1.innerHTML = top.length ? `<div class="notice warn"><strong>Still needed</strong><ul class="issues">${top.map((i) => `<li>${esc(i.text)}</li>`).join('')}</ul></div>` : ''; }
+    if (step1) { const top = [...clientBlockers(S.draft.inputs), ...r.allIssues.filter((i) => issueTarget(i).step === 1 && i.level === 'block')]; step1.innerHTML = top.length ? `<div class="notice warn"><strong>Still needed</strong><ul class="issues">${top.map((i) => `<li>${esc(i.text)}</li>`).join('')}</ul></div>` : ''; }
     const picker = $('#unitPicker'); if (picker) picker.innerHTML = unitPickerHtml(S.draft.inputs);
     for (const [code, x] of Object.entries(r.units)) {
       const el = $(`[data-calc="unit-${code}"]`); if (el) el.innerHTML = unitCalcHtml(x);
@@ -960,7 +988,7 @@
     });
     for (const [p, pr] of Object.entries(r.products)) { const el = $(`[data-calc="result-${p}"]`); if (el) el.innerHTML = productResultPanels(pr, r, S.draft.inputs); }
     const rev = $('[data-calc="review"]'); if (rev) rev.innerHTML = reviewHtml(r);
-    const fb = $('#finaliseBtn'); if (fb) { const ok = S.draft.isDemo ? r.canFinaliseDemo : r.canFinalise; fb.disabled = !ok; fb.title = ok ? '' : 'Finish the items listed under "Check and finalise" first.'; }
+    const fb = $('#finaliseBtn'); if (fb) { const ok = (S.draft.isDemo ? r.canFinaliseDemo : r.canFinalise) && !clientBlockers(S.draft.inputs).length; fb.disabled = !ok; fb.title = ok ? '' : 'Finish the items listed under "Check and finalise" first.'; }
   }
   async function finalise() {
     const d = S.draft;
